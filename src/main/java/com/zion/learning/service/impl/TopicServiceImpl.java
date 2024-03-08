@@ -18,16 +18,12 @@ import com.zion.learning.service.PointService;
 import com.zion.learning.service.TopicService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -58,7 +54,7 @@ public class TopicServiceImpl implements TopicService {
             Assert.isTrue(old != null,"The topic :"+qo.getTitle()+" is notfound!");
         }
 
-        Integer level = 1;
+        int level = 1;
         Long parentId = 0L;
         if(qo.getParentId() != null && !qo.getParentId().equals(0L)){
             parentId = qo.getParentId();
@@ -94,7 +90,7 @@ public class TopicServiceImpl implements TopicService {
     /**
      *定义与hutool树结构配置
      */
-    private static TreeNodeConfig treeNodeConfig = new TreeNodeConfig();
+    private static final TreeNodeConfig treeNodeConfig = new TreeNodeConfig();
     static {
         // 自定义属性名
         treeNodeConfig.setIdKey("id"); // 默认为id可以不设置
@@ -104,8 +100,8 @@ public class TopicServiceImpl implements TopicService {
         treeNodeConfig.setDeep(10); // 可以配置递归深度 从0开始计算 默认此配置为空,即不限制
     }
 
-    public List tree(Long currentUserId,Long excludeId,Boolean root) {
-        List list = new ArrayList();
+    public List<Tree<String>> tree(Long currentUserId,Long excludeId,Boolean root) {
+        List<Tree<String>> list = new ArrayList<>();
         List<Topic> topics = topicDao.condition(Topic.builder().userId(currentUserId).build());
         if(CollUtil.isEmpty(topics)){
             return list;
@@ -170,8 +166,8 @@ public class TopicServiceImpl implements TopicService {
         topicDao.save(topic);
     }
 
-    public Page list(TopicQO condition) {
-        Page<TopicVO> page = topicDao.pageQuery(new Page(condition.getPageNo(), condition.getPageSize())
+    public Page<TopicVO> list(TopicQO condition) {
+        Page<TopicVO> page = topicDao.pageQuery(new Page<>(condition.getPageNo(), condition.getPageSize())
                 , TopicVO.class
                 , Topic.builder().title(condition.getTitle()).build());
 
@@ -206,9 +202,6 @@ public class TopicServiceImpl implements TopicService {
 
     /**
      * generate full title
-     * @param title
-     * @param fullParentName
-     * @return
      */
     private String getFullTitle(String title,String fullParentName) {
         return fullParentName != null

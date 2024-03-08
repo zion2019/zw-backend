@@ -6,7 +6,7 @@ import com.zion.common.vo.learning.response.PractiseVO;
 
 public interface PracticeService {
 
-    Page todayList(PracticeQO qo);
+    Page<PractiseVO> todayList(PracticeQO qo);
 
     boolean practise(PracticeQO qo);
 

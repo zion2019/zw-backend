@@ -1,14 +1,14 @@
 package com.zion.common.vo.learning.request;
 
-import com.zion.common.basic.Page;
-import lombok.Builder;
+import com.zion.common.basic.BasicPageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-@Builder
-public class TodoTodayQO  extends Page implements Serializable {
+public class TodoTodayQO  extends BasicPageRequest implements Serializable {
 
     private Long userId;
 }

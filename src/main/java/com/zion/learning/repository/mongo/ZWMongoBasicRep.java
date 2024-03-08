@@ -89,7 +89,7 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
     }
 
     @Override
-    public Page pageQuery(Page page,Class resultClazz, M condition) {
+    public <T> Page<T> pageQuery(Page<T> page,Class<T> resultClazz, M condition) {
         Query query = getQuery(condition);
 
         //  query total
@@ -119,11 +119,11 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
     }
 
     @Override
-    public Long remove(M condition) {
+    public void remove(M condition) {
         Update update = new Update().set("deleted", CommonConstant.DELETED_YES);
         update.set("updateTime",new Date());
         Query query = getQuery(condition);
         UpdateResult result = mongoTemplate.updateMulti(query, update, entityClass);
-        return result.getModifiedCount();
+        result.getModifiedCount();
     }
 }

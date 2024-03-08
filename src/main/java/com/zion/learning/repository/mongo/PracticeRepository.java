@@ -2,25 +2,23 @@ package com.zion.learning.repository.mongo;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import com.mongodb.client.result.UpdateResult;
 import com.zion.common.basic.CommonConstant;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.TotalSize;
-import com.zion.common.utils.BaseEntityUtil;
 import com.zion.common.vo.learning.response.PractiseVO;
 import com.zion.learning.dao.PracticeDao;
 import com.zion.learning.model.Practice;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.*;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @AllArgsConstructor
@@ -28,8 +26,6 @@ import java.util.List;
 public class PracticeRepository extends ZWMongoBasicRep<Practice> implements PracticeDao {
     /**
      * generate query by condition
-     * @param condition
-     * @return
      */
     @Override
     public Query generateQuery(Practice condition) {
@@ -70,8 +66,8 @@ public class PracticeRepository extends ZWMongoBasicRep<Practice> implements Pra
     }
 
     @Override
-    public Page findUndoTopicByDate(Integer pageNo, Integer pageSize, Practice condition) {
-        Page page = new Page<>();
+    public Page<PractiseVO> findUndoTopicByDate(Integer pageNo, Integer pageSize, Practice condition) {
+        Page<PractiseVO> page = new Page<>();
         page.setPageNo(pageNo);
         page.setPageSize(pageSize);
         List<AggregationOperation> basicOperation = new ArrayList<>();
@@ -98,7 +94,7 @@ public class PracticeRepository extends ZWMongoBasicRep<Practice> implements Pra
         List<AggregationOperation> dataOperation= new ArrayList<>(basicOperation);
         dataOperation.add(Aggregation.group("topicId").count().as("undoCount").first("topicId").as("topicId"));
         dataOperation.add(Aggregation.sort(Sort.Direction.DESC, "undoCount"));
-        dataOperation.add(Aggregation.skip(pageNo * pageSize));
+        dataOperation.add(Aggregation.skip((long) pageNo * pageSize));
         dataOperation.add(Aggregation.limit(pageSize));
         TypedAggregation<Practice> aggregation = Aggregation.newAggregation(Practice.class, dataOperation);
 

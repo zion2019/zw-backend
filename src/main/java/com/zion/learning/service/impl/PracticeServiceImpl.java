@@ -1,7 +1,6 @@
 package com.zion.learning.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import com.zion.common.basic.Page;
 import com.zion.common.vo.learning.request.PointQO;
@@ -26,7 +25,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -44,7 +42,7 @@ public class PracticeServiceImpl implements PracticeService {
     private PointService pointService;
 
     @Override
-    public Page todayList(PracticeQO qo) {
+    public Page<PractiseVO> todayList(PracticeQO qo) {
 
 
         // Get the not done, time greater than zero today, paging, reverse order, topicId
@@ -71,7 +69,7 @@ public class PracticeServiceImpl implements PracticeService {
         condition.setTopicIds(topics);
         List<Practice> practices = practiceDao.condition(condition);
         if(CollUtil.isEmpty(practices)){
-            return new Page();
+            return new Page<>();
         }
 
         Map<Long, List<Practice>> groupMap = practices.stream().collect(Collectors.groupingBy(Practice::getTopicId));
@@ -94,7 +92,7 @@ public class PracticeServiceImpl implements PracticeService {
             // today done
             practisesForTopic.stream().filter(p ->
                     p.getUpdatedTime() != null
-                    && LocalDateTimeUtil.beginOfDay(LocalDateTime.now()).compareTo(LocalDateTimeUtil.beginOfDay(p.getUpdatedTime())) == 0
+                    && LocalDateTimeUtil.beginOfDay(LocalDateTime.now()).isEqual(LocalDateTimeUtil.beginOfDay(p.getUpdatedTime()))
                     && PractiseResult.DONE.equals(p.getResult())
             ).forEach(p->vo.setToDayDoneCount(vo.getToDayDoneCount().add(BigDecimal.ONE)));
 
@@ -168,6 +166,6 @@ public class PracticeServiceImpl implements PracticeService {
         // save
         condition.setPractiseDate(LocalDateTimeUtil.beginOfDay(LocalDateTimeUtil.offset(LocalDateTime.now(),qo.getIntervalDays(), ChronoUnit.DAYS)));
         practiceDao.save(condition);
-        return true;
+        return false;
     }
 }

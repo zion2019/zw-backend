@@ -39,7 +39,7 @@ public class TaskServiceImpl implements TaskService {
                 .finished(false)
                 .build();
         condition.sort("endTime", Sort.Direction.DESC);
-        Page<Task> page = taskDao.pageQuery(new Page<Task>(0, 2)
+        Page<Task> page = taskDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize())
                 , Task.class, condition);
 
         if(CollUtil.isNotEmpty(page.getDataList())){

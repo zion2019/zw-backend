@@ -4,12 +4,11 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.zion.common.basic.Page;
+import com.zion.common.vo.learning.request.PointQO;
 import com.zion.common.vo.learning.request.PracticeQO;
 import com.zion.common.vo.learning.response.PointVo;
 import com.zion.common.vo.learning.response.SubPointVo;
 import com.zion.common.vo.learning.response.TopicStatisticVo;
-import com.zion.common.vo.learning.request.PointQO;
-import com.zion.common.vo.resource.request.SubPointQO;
 import com.zion.learning.common.DegreeOfMastery;
 import com.zion.learning.common.PractiseResult;
 import com.zion.learning.dao.PointDao;
@@ -51,12 +50,12 @@ public class PointServiceImpl implements PointService {
         pointDao.save(point);
 
         if(upgradeDegree != null){
-            practiceService.saveNext(PracticeQO.builder().topicId(point.getTopicId())
+           return practiceService.saveNext(PracticeQO.builder().topicId(point.getTopicId())
                     .pointId(point.getId())
                     .userId(qo.getUserId())
                     .intervalDays(upgradeDegree.getIntervalDay())
                     .build());
-        };
+        }
 
         return true;
     }
@@ -68,8 +67,6 @@ public class PointServiceImpl implements PointService {
 
     /**
      * 统计主题下学习程度
-     * @param topicId
-     * @return
      */
     public TopicStatisticVo statisticMastery(Long topicId) {
         TopicStatisticVo statisticVo = new TopicStatisticVo();
@@ -86,8 +83,6 @@ public class PointServiceImpl implements PointService {
 
     /**
      * list with page
-     * @param pointQO
-     * @return
      */
     public Page<PointVo> list(PointQO pointQO) {
         return pointDao.pageQuery(new Page<>(pointQO.getPageNo(),pointQO.getPageSize()),PointVo.class
@@ -96,8 +91,6 @@ public class PointServiceImpl implements PointService {
 
     /**
      * save or update
-     * @param pointQO
-     * @return
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean save(PointQO pointQO) {

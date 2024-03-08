@@ -1,8 +1,5 @@
 package com.zion.common.basic;
 
-import com.zion.common.vo.resource.request.SubPointQO;
-import com.zion.learning.model.Practice;
-
 import java.util.List;
 
 public interface ZWDao<M> {
@@ -18,8 +15,8 @@ public interface ZWDao<M> {
 
     long delete(M condition);
 
-    Page pageQuery(Page page, Class targetClazz, M condition);
+    <T> Page<T> pageQuery(Page<T> page, Class<T> targetClazz, M condition);
 
-    Long remove(M condition);
+    void remove(M condition);
 
 }
