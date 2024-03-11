@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.List;
 
 @Getter
-public abstract class BasicCondition<T> {
+public abstract class BasicCondition {
 
     @JsonIgnore
     private List<Long> ids;
@@ -21,8 +22,9 @@ public abstract class BasicCondition<T> {
 
     @JsonIgnore
     private Sort.Direction sortDirection;
+
     @JsonIgnore
-    private boolean isSort;
+    private Boolean isSort;
 
 
     public void include(String... includeFields){
@@ -36,7 +38,7 @@ public abstract class BasicCondition<T> {
     public void sort(String sortFiledName,Sort.Direction sortDirection){
         this.sortFiledName = sortFiledName;
         this.sortDirection = sortDirection;
-        isSort = true;
+        this.isSort = true;
     }
 }
 

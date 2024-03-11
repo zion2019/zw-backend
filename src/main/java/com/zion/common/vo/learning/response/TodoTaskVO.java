@@ -5,7 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class TodoTodayVO implements Serializable {
+public class TodoTaskVO implements Serializable {
     private Long taskId;
 
     private String title;

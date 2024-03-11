@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 public class Page<T> implements Serializable {
 
-    private Integer pageNo = 10;
+    private Integer pageNo = 1;
     private Integer pageSize = 10;
 
     private Long total;

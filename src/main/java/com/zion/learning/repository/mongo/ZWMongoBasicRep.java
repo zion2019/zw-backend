@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
@@ -36,11 +37,16 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
 
     private  Query getQuery(M condition){
         Query query = generateQuery(condition);
+        if(condition.getId() != null){
+            query.addCriteria(Criteria.where("id").is(condition.getId()));
+        }
+
         if(condition.getIncludeFields() != null){
             query.fields().include(condition.getIncludeFields());
         }
 
-        if(StrUtil.isNotBlank(condition.getSortFiledName())){
+        // sorting
+        if(condition.getIsSort() != null && condition.getIsSort()){
             query.with(Sort.by(condition.getSortDirection(),condition.getSortFiledName()));
         }
 
@@ -99,18 +105,11 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
         }
 
         // Create a Pageable object for pagination
-        Pageable pageable = PageRequest.of(page.getPageNo(), page.getPageSize());
+        Pageable pageable = PageRequest.of(page.getPageNo()-1, page.getPageSize());
         query.with(pageable);
 
-        // sorting
-        if(query.isSorted()){
-            query.with(Sort.by(condition.getSortDirection(),condition.getSortFiledName()));
-        }
-
-
-
         // query
-        List<M> points = mongoTemplate.find(query, entityClass, condition.getSortFiledName());
+        List<M> points = mongoTemplate.find(query, entityClass);
         page.setPageNo(page.getPageNo());
         page.setPageSize(page.getPageSize());
         page.setDataList(BeanUtil.copyToList(points,resultClazz));

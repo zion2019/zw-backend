@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class TodoTodayQO  extends BasicPageRequest implements Serializable {
+public class TodoTaskQO extends BasicPageRequest implements Serializable {
 
     private Long userId;
 }

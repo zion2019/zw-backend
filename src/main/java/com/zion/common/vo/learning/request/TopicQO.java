@@ -22,4 +22,7 @@ public class TopicQO extends Page {
      * needing query the full path Name When fullPath is true.
      */
     private Boolean fullPath;
+
+
+
 }

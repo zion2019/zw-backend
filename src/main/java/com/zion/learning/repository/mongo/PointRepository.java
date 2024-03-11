@@ -27,9 +27,6 @@ public class PointRepository extends ZWMongoBasicRep<Point> implements PointDao 
         if(condition.getTopicId() != null){
             query.addCriteria(Criteria.where("topicId").is(condition.getTopicId()));
         }
-        if(condition.getId() != null){
-            query.addCriteria(Criteria.where("id").is(condition.getId()));
-        }
         return query;
     }
 

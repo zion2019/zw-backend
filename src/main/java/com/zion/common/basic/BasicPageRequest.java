@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class BasicPageRequest {
 
-    private Integer pageNo = 10;
+    private Integer pageNo = 1;
     private Integer pageSize = 10;
 
     private Long total;

@@ -1,5 +1,6 @@
 package com.zion.common.vo.learning.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.time.LocalDateTime;
 

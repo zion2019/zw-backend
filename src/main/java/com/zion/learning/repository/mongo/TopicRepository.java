@@ -29,9 +29,6 @@ public class TopicRepository extends ZWMongoBasicRep<Topic> implements TopicDao 
         if(condition.getUserId() != null){
             query.addCriteria(Criteria.where("userId").is(condition.getUserId()));
         }
-        if(condition.getId() != null){
-            query.addCriteria(Criteria.where("id").is(condition.getId()));
-        }
         if(condition.getExcludeId() != null){
             query.addCriteria(Criteria.where("id").ne(condition.getExcludeId()));
         }
