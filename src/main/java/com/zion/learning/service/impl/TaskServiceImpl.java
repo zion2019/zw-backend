@@ -20,9 +20,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -49,11 +52,11 @@ public class TaskServiceImpl implements TaskService {
 
         List<TodoTaskVO> voList = new ArrayList<>(page.getPageSize());
         if(CollUtil.isNotEmpty(page.getDataList())){
-            Map<Long, String> topicMap = new HashMap<>();
+            Map<Long, TopicVO> topicMap = new HashMap<>();
             List<Long> topicIdSet = page.getDataList().stream().map(Task::getTopicId).collect(Collectors.toList());
             List<TopicVO> topicInfos = topicService.getTitleByIds(topicIdSet);
             if(CollUtil.isNotEmpty(topicInfos)){
-                topicMap = topicInfos.stream().collect(Collectors.toMap(TopicVO::getId, TopicVO::getFullTitle, (t1, t2) -> t1));
+                topicMap = topicInfos.stream().collect(Collectors.toMap(TopicVO::getId, Function.identity(), (t1, t2) -> t1));
             }
 
             for (Task task : page.getDataList()) {
@@ -62,10 +65,16 @@ public class TaskServiceImpl implements TaskService {
                 vo.setTaskId(task.getId());
                 vo.setTitle(task.getTitle());
                 // topic info
-                vo.setTopicFullName(topicMap.get(task.getTopicId()));
+                TopicVO topicVO = topicMap.get(task.getTopicId());
+                if(topicVO != null){
+                    vo.setTopicFullName(topicVO.getFullTitle());
+                    vo.setBackground(topicVO.getBackground());
+                }
 
                 // calculate the remaining hour
-                vo.setRemainingHour(LocalDateTimeUtil.between(task.getEndTime(),LocalDateTime.now(), ChronoUnit.HOURS));
+                vo.setRemainingHour(BigDecimal.valueOf(LocalDateTimeUtil.between(task.getEndTime(),LocalDateTime.now(), ChronoUnit.HOURS)));
+//                vo.setCompletePercent(BigDecimal.ONE.subtract(vo.getRemainingHour().divide(new BigDecimal("24"),2, RoundingMode.HALF_UP)));
+                vo.setCompletePercent(BigDecimal.ZERO);
             }
 
 

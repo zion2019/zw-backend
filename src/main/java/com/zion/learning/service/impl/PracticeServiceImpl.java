@@ -87,7 +87,7 @@ public class PracticeServiceImpl implements PracticeService {
 
             vo.setUndoCount(BigDecimal.valueOf(practisesForTopic.stream().filter(p -> PractiseResult.UNDO.equals(p.getResult())).count()));
             vo.setToDayDoneCount(BigDecimal.ZERO);
-            vo.setToDayCompletePercent(new BigDecimal("-1"));
+            vo.setCompletePercent(BigDecimal.ZERO);
 
             // today done
             practisesForTopic.stream().filter(p ->
@@ -99,7 +99,7 @@ public class PracticeServiceImpl implements PracticeService {
             // today total = today done + undo
             vo.setToDayTotalCount(vo.getToDayDoneCount().add(vo.getUndoCount()));
             if(vo.getToDayDoneCount() != null && vo.getToDayTotalCount() != null && vo.getToDayTotalCount().compareTo(BigDecimal.ZERO) > 0){
-                vo.setToDayCompletePercent(vo.getToDayDoneCount().divide(vo.getToDayTotalCount(),2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)));
+                vo.setCompletePercent(vo.getToDayDoneCount().divide(vo.getToDayTotalCount(),2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)));
             }
         }
 

@@ -27,7 +27,7 @@ public class PractiseVO implements Serializable {
 
     public BigDecimal toDayTotalCount;
 
-    public BigDecimal toDayCompletePercent;
+    public BigDecimal completePercent;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     public Long id;
