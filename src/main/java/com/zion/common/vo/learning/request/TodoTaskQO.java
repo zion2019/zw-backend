@@ -11,4 +11,7 @@ import java.io.Serializable;
 public class TodoTaskQO extends BasicPageRequest implements Serializable {
 
     private Long userId;
+
+    private boolean today;
+
 }

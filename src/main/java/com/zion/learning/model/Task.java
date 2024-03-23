@@ -1,6 +1,7 @@
 package com.zion.learning.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.zion.common.basic.BaseEntity;
 import lombok.Builder;
 import lombok.Data;
@@ -37,5 +38,8 @@ public class Task  extends BaseEntity {
     private Boolean finished;
 
     private String routineCron;
+
+    @JsonIgnore
+    private LocalDateTime gtEndTime;
 
 }

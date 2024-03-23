@@ -19,7 +19,6 @@ public class PointRepository extends ZWMongoBasicRep<Point> implements PointDao 
     @Override
     Query generateQuery(Point condition) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("deleted").is(CommonConstant.DELETED_NO));
         if(CharSequenceUtil.isNotBlank(condition.getTitle())){
             Pattern pattern = Pattern.compile(condition.getTitle(), Pattern.CASE_INSENSITIVE);
             query.addCriteria(Criteria.where("title").regex(pattern));

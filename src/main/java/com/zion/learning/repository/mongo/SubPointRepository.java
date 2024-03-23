@@ -42,7 +42,6 @@ public class SubPointRepository extends ZWMongoBasicRep<SubPoint> implements Sub
     @Override
     Query generateQuery(SubPoint condition) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("deleted").is(CommonConstant.DELETED_NO));
 
         if(condition.getPointId() != null){
             query.addCriteria(Criteria.where("pointId").is(condition.getPointId()));

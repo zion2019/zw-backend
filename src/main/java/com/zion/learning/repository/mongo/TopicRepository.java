@@ -18,7 +18,6 @@ public class TopicRepository extends ZWMongoBasicRep<Topic> implements TopicDao 
     @Override
     Query generateQuery(Topic condition) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("deleted").is(CommonConstant.DELETED_NO));
         if(condition.getParentId() != null){
             query.addCriteria(Criteria.where("parentId").is(condition.getParentId()));
         }

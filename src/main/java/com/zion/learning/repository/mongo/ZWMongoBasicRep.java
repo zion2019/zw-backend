@@ -37,6 +37,7 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
 
     private  Query getQuery(M condition){
         Query query = generateQuery(condition);
+        query.addCriteria(Criteria.where("deleted").is(CommonConstant.DELETED_NO));
         if(condition.getId() != null){
             query.addCriteria(Criteria.where("id").is(condition.getId()));
         }
@@ -105,14 +106,14 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
         }
 
         // Create a Pageable object for pagination
-        Pageable pageable = PageRequest.of(page.getPageNo()-1, page.getPageSize());
+        Pageable pageable = PageRequest.of(page.getPageNo(), page.getPageSize());
         query.with(pageable);
 
         // query
-        List<M> points = mongoTemplate.find(query, entityClass);
+        List<M> entities = mongoTemplate.find(query, entityClass);
         page.setPageNo(page.getPageNo());
         page.setPageSize(page.getPageSize());
-        page.setDataList(BeanUtil.copyToList(points,resultClazz));
+        page.setDataList(BeanUtil.copyToList(entities,resultClazz));
         page.setTotal(totalCount);
         return page;
     }

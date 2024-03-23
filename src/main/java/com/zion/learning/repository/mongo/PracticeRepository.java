@@ -30,7 +30,6 @@ public class PracticeRepository extends ZWMongoBasicRep<Practice> implements Pra
     @Override
     public Query generateQuery(Practice condition) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("deleted").is(CommonConstant.DELETED_NO));
         if(condition.getUserId() != null){
             query.addCriteria(Criteria.where("userId").is(condition.getUserId()));
         }

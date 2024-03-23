@@ -3,16 +3,16 @@ package com.zion.learning.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import com.zion.common.basic.ExpireTagTypeEnum;
 import com.zion.common.basic.Page;
 import com.zion.common.vo.learning.request.TaskQO;
 import com.zion.common.vo.learning.request.TodoTaskQO;
-import com.zion.common.vo.learning.request.TopicQO;
+import com.zion.common.vo.learning.response.TaskExpireTagVo;
 import com.zion.common.vo.learning.response.TaskVO;
 import com.zion.common.vo.learning.response.TodoTaskVO;
 import com.zion.common.vo.learning.response.TopicVO;
 import com.zion.learning.dao.TaskDao;
 import com.zion.learning.model.Task;
-import com.zion.learning.model.Topic;
 import com.zion.learning.service.TaskService;
 import com.zion.learning.service.TopicService;
 import jakarta.annotation.Resource;
@@ -22,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
@@ -40,13 +42,17 @@ public class TaskServiceImpl implements TaskService {
     private TopicService topicService;
 
     @Override
-    public Page<TodoTaskVO> todoList(TodoTaskQO qo) {
+    public Page<TodoTaskVO> page(TodoTaskQO qo) {
         Page<TodoTaskVO> voPage = new Page<>();
         voPage.setPageNo(qo.getPageNo());
         voPage.setPageSize(qo.getPageSize());
         Task condition = Task.builder().userId(qo.getUserId())
                 .finished(false)
                 .build();
+        // limited today task
+        if(qo.isToday()){
+            condition.setGtEndTime(LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT));
+        }
         condition.sort("endTime", Sort.Direction.DESC);
         Page<Task> page = taskDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize())
                 , Task.class, condition);
@@ -72,10 +78,19 @@ public class TaskServiceImpl implements TaskService {
                     vo.setBackground(topicVO.getBackground());
                 }
 
-                // calculate the remaining hour
-                vo.setRemainingHour(BigDecimal.valueOf(LocalDateTimeUtil.between(task.getEndTime(),LocalDateTime.now(), ChronoUnit.HOURS)));
-//                vo.setCompletePercent(BigDecimal.ONE.subtract(vo.getRemainingHour().divide(new BigDecimal("24"),2, RoundingMode.HALF_UP)));
-                vo.setCompletePercent(BigDecimal.ZERO);
+                // calculate expire
+                if(!task.getFinished()){
+                    // Not Start
+                    if(LocalDateTime.now().compareTo(task.getStartTime()) > 0){
+                        vo.setExpireTag(this.calculateExpire(task.getStartTime(),LocalDateTime.now(),"Begin With "));
+                    }else{
+                        if(LocalDateTime.now().compareTo(task.getEndTime()) > 0){
+                            vo.setExpireTag(this.calculateExpire(LocalDateTime.now(),task.getEndTime(),"Expired "));
+                        }else{
+                            vo.setExpireTag(this.calculateExpire(task.getEndTime(),LocalDateTime.now(),"Last "));
+                        }
+                    }
+                }
             }
 
 
@@ -84,6 +99,34 @@ public class TaskServiceImpl implements TaskService {
 
         return voPage;
     }
+
+
+    private TaskExpireTagVo calculateExpire(LocalDateTime startTime,LocalDateTime endTime,String expireType) {
+        TaskExpireTagVo vo = new TaskExpireTagVo();
+        Duration remainingTime = Duration.between(startTime, endTime);
+
+        if (remainingTime.getSeconds() < 60) {
+            vo.setTagType(ExpireTagTypeEnum.DANGER);
+            vo.setTagName(expireType+"1 minute");
+        } else if (remainingTime.getSeconds() < 3600) {
+            vo.setTagType(ExpireTagTypeEnum.DANGER);
+            vo.setTagName(expireType+remainingTime.toMinutes()+" minute");
+        } else if (remainingTime.getSeconds() < 86400) {
+            vo.setTagType(ExpireTagTypeEnum.WARNING);
+            vo.setTagName(expireType+remainingTime.toHours()+" hours");
+        } else if (remainingTime.getSeconds() < 2592000) { // 大约一个月的秒数
+            vo.setTagType(ExpireTagTypeEnum.WARNING);
+            vo.setTagName(expireType+remainingTime.toDays()+" days");
+        } else if (remainingTime.getSeconds() < 31536000) { // 大约一年的秒数
+            vo.setTagType(ExpireTagTypeEnum.WARNING);
+            vo.setTagName(expireType+(int)(remainingTime.toDays() / 30)+" month");
+        } else {
+            vo.setTagType(ExpireTagTypeEnum.WARNING);
+            vo.setTagName(expireType+(int)(remainingTime.toDays() / 365)+" years");
+        }
+        return vo;
+    }
+
 
 
     @Transactional(rollbackFor = Exception.class)
@@ -119,6 +162,14 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return BeanUtil.copyProperties(tasks.get(0),TaskVO.class);
+    }
+
+    @Override
+    public boolean remove(Long taskId) {
+        Task condition = Task.builder().build();
+        condition.setId(taskId);
+        taskDao.remove(condition);
+        return true;
     }
 
     public boolean removeTask(Long taskId){

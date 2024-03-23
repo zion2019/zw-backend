@@ -9,9 +9,11 @@ import com.zion.common.vo.learning.response.TaskVO;
 import java.util.List;
 
 public interface TaskService {
-    Page<TodoTaskVO> todoList(TodoTaskQO qo);
+    Page<TodoTaskVO> page(TodoTaskQO qo);
 
     boolean addOrEditTask(Long userId,TaskQO qo);
 
     TaskVO info(Long currentUserId, Long taskId);
+
+    boolean remove(Long taskId);
 }

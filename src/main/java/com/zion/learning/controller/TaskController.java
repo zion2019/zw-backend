@@ -27,10 +27,15 @@ public class TaskController extends BaseController {
     }
 
 
-    @PostMapping("/todo")
-    public R<TodoTaskVO> todo(@RequestBody TodoTaskQO qo){
+    @PostMapping("/page")
+    public R<TodoTaskVO> page(@RequestBody TodoTaskQO qo){
         qo.setUserId(getCurrentUserId());
-        return R.ok(taskService.todoList(qo));
+        return R.ok(taskService.page(qo));
+    }
+
+    @DeleteMapping
+    public R<Boolean> remove(@RequestParam("taskId")Long taskId){
+        return R.ok(taskService.remove(taskId));
     }
 
 
