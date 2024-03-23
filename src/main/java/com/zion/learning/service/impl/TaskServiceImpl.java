@@ -7,6 +7,7 @@ import com.zion.common.basic.Page;
 import com.zion.common.vo.learning.request.TaskQO;
 import com.zion.common.vo.learning.request.TodoTaskQO;
 import com.zion.common.vo.learning.request.TopicQO;
+import com.zion.common.vo.learning.response.TaskVO;
 import com.zion.common.vo.learning.response.TodoTaskVO;
 import com.zion.common.vo.learning.response.TopicVO;
 import com.zion.learning.dao.TaskDao;
@@ -86,26 +87,38 @@ public class TaskServiceImpl implements TaskService {
 
 
     @Transactional(rollbackFor = Exception.class)
-    public boolean addOrEditTask(Long userId,List<TaskQO> qos){
-        for (TaskQO qo : qos) {
-            Task task ;
-            if(qo.getId() != null){
-                task = taskDao.getById(qo.getId());
-            }else{
-                task = Task.builder()
-                        .userId(userId)
-                        .finished(false)
-                        .build();
-            }
-
-            task.setDescription(qo.getDescription());
-            task.setEndTime(qo.getEndTime());
-            task.setStartTime(qo.getStartTime());
-            task.setTitle(qo.getTitle());
-            task.setTopicId(qo.getTopicId());
-            taskDao.save(task);
+    public boolean addOrEditTask(Long userId,TaskQO qo){
+        Task task ;
+        if(qo.getId() != null){
+            task = taskDao.getById(qo.getId());
+        }else{
+            task = Task.builder()
+                    .userId(userId)
+                    .finished(false)
+                    .build();
         }
+
+        task.setContent(qo.getContent());
+        task.setEndTime(qo.getEndTime());
+        task.setStartTime(qo.getStartTime());
+        task.setTitle(qo.getTitle());
+        task.setRoutine(qo.isRoutine());
+        task.setRoutineCron(qo.getRoutineCron());
+        task.setTopicId(qo.getTopicId());
+        taskDao.save(task);
         return true;
+    }
+
+    @Override
+    public TaskVO info(Long currentUserId, Long taskId) {
+        Task condition = Task.builder().userId(currentUserId).build();
+        condition.setId(taskId);
+        List<Task> tasks = taskDao.condition(condition);
+        if(CollUtil.isEmpty(tasks)){
+            return null;
+        }
+
+        return BeanUtil.copyProperties(tasks.get(0),TaskVO.class);
     }
 
     public boolean removeTask(Long taskId){

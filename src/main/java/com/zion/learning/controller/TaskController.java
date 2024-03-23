@@ -5,14 +5,10 @@ import com.zion.common.basic.R;
 import com.zion.common.vo.learning.request.TaskQO;
 import com.zion.common.vo.learning.request.TodoTaskQO;
 import com.zion.common.vo.learning.response.TodoTaskVO;
+import com.zion.common.vo.learning.response.TaskVO;
 import com.zion.learning.service.TaskService;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/learn/task")
@@ -21,9 +17,15 @@ public class TaskController extends BaseController {
     private TaskService taskService;
 
     @PostMapping
-    public R<Boolean> addOrEditTask(@RequestBody List<TaskQO> qos){
-        return R.ok(taskService.addOrEditTask(getCurrentUserId(),qos));
+    public R<Boolean> addOrEditTask(@RequestBody TaskQO qo){
+        return R.ok(taskService.addOrEditTask(getCurrentUserId(),qo));
     }
+
+    @GetMapping("/info/{taskId}")
+    public R<TaskVO> info(@PathVariable("taskId")Long taskId){
+        return R.ok(taskService.info(getCurrentUserId(),taskId));
+    }
+
 
     @PostMapping("/todo")
     public R<TodoTaskVO> todo(@RequestBody TodoTaskQO qo){

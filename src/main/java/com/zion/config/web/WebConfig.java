@@ -1,5 +1,6 @@
 package com.zion.config.web;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -38,16 +39,17 @@ public class WebConfig implements WebMvcConfigurer {
         };
     }
 
+    public static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
     /**
-     * 序列化
+     * 序列化 暂时取消，采用字段注解方案
      */
     public static class LocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
         @Override
         public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers)
                 throws IOException {
             if (value != null) {
-                long timestamp = value.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-                gen.writeNumber(timestamp);
+                gen.writeString(LocalDateTimeUtil.format(value,DATE_TIME_FORMAT));
             }
         }
     }
@@ -59,12 +61,7 @@ public class WebConfig implements WebMvcConfigurer {
         @Override
         public LocalDateTime deserialize(JsonParser p, DeserializationContext deserializationContext)
                 throws IOException {
-            long timestamp = p.getValueAsLong();
-            if (timestamp > 0) {
-                return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
-            } else {
-                return null;
-            }
+            return LocalDateTimeUtil.parse(p.getText(),DATE_TIME_FORMAT);
         }
     }
 

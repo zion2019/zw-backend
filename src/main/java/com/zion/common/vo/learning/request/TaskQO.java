@@ -1,7 +1,8 @@
 package com.zion.common.vo.learning.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDateTime;
 
 @Data
@@ -11,16 +12,21 @@ public class TaskQO {
 
     private String title;
 
-    private String description;
+    private String content;
 
     private Long topicId;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startTime;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
 
+    private boolean routine;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime actualCloseTime;
 
-    private String dailyCron;
+    private String routineCron;
 
 }
