@@ -48,6 +48,7 @@ public class TaskServiceImpl implements TaskService {
         voPage.setPageSize(qo.getPageSize());
         Task condition = Task.builder().userId(qo.getUserId())
                 .finished(false)
+                .userId(qo.getUserId())
                 .build();
         // limited today task
         if(qo.isToday()){
@@ -81,10 +82,10 @@ public class TaskServiceImpl implements TaskService {
                 // calculate expire
                 if(!task.getFinished()){
                     // Not Start
-                    if(LocalDateTime.now().compareTo(task.getStartTime()) > 0){
+                    if(LocalDateTime.now().isAfter(task.getStartTime())){
                         vo.setExpireTag(this.calculateExpire(task.getStartTime(),LocalDateTime.now(),"Begin With "));
                     }else{
-                        if(LocalDateTime.now().compareTo(task.getEndTime()) > 0){
+                        if(LocalDateTime.now().isAfter(task.getEndTime())){
                             vo.setExpireTag(this.calculateExpire(LocalDateTime.now(),task.getEndTime(),"Expired "));
                         }else{
                             vo.setExpireTag(this.calculateExpire(task.getEndTime(),LocalDateTime.now(),"Last "));
@@ -106,22 +107,22 @@ public class TaskServiceImpl implements TaskService {
         Duration remainingTime = Duration.between(startTime, endTime);
 
         if (remainingTime.getSeconds() < 60) {
-            vo.setTagType(ExpireTagTypeEnum.DANGER);
+            vo.setTagType(ExpireTagTypeEnum.danger);
             vo.setTagName(expireType+"1 minute");
         } else if (remainingTime.getSeconds() < 3600) {
-            vo.setTagType(ExpireTagTypeEnum.DANGER);
+            vo.setTagType(ExpireTagTypeEnum.danger);
             vo.setTagName(expireType+remainingTime.toMinutes()+" minute");
         } else if (remainingTime.getSeconds() < 86400) {
-            vo.setTagType(ExpireTagTypeEnum.WARNING);
+            vo.setTagType(ExpireTagTypeEnum.warning);
             vo.setTagName(expireType+remainingTime.toHours()+" hours");
         } else if (remainingTime.getSeconds() < 2592000) { // 大约一个月的秒数
-            vo.setTagType(ExpireTagTypeEnum.WARNING);
+            vo.setTagType(ExpireTagTypeEnum.warning);
             vo.setTagName(expireType+remainingTime.toDays()+" days");
         } else if (remainingTime.getSeconds() < 31536000) { // 大约一年的秒数
-            vo.setTagType(ExpireTagTypeEnum.WARNING);
+            vo.setTagType(ExpireTagTypeEnum.warning);
             vo.setTagName(expireType+(int)(remainingTime.toDays() / 30)+" month");
         } else {
-            vo.setTagType(ExpireTagTypeEnum.WARNING);
+            vo.setTagType(ExpireTagTypeEnum.warning);
             vo.setTagName(expireType+(int)(remainingTime.toDays() / 365)+" years");
         }
         return vo;
@@ -169,13 +170,6 @@ public class TaskServiceImpl implements TaskService {
         Task condition = Task.builder().build();
         condition.setId(taskId);
         taskDao.remove(condition);
-        return true;
-    }
-
-    public boolean removeTask(Long taskId){
-        Task removeCondition = Task.builder().build();
-        removeCondition.setId(taskId);
-        taskDao.delete(removeCondition);
         return true;
     }
 }

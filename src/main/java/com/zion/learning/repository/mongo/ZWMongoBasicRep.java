@@ -106,7 +106,7 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
         }
 
         // Create a Pageable object for pagination
-        Pageable pageable = PageRequest.of(page.getPageNo(), page.getPageSize());
+        Pageable pageable = PageRequest.of(page.getPageNo()<= 0?page.getPageNo():page.getPageNo()-1, page.getPageSize());
         query.with(pageable);
 
         // query

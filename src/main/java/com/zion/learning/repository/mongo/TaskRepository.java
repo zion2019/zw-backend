@@ -14,6 +14,7 @@ public class TaskRepository  extends ZWMongoBasicRep<Task> implements TaskDao {
     @Override
     Query generateQuery(Task condition) {
         Query query = new Query();
+        query.addCriteria(Criteria.where("userId").is(condition.getUserId()));
         if(condition.getFinished() != null){
             query.addCriteria(Criteria.where("finished").is(condition.getFinished()));
         }

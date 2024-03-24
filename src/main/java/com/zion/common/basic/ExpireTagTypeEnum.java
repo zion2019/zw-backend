@@ -6,10 +6,10 @@ package com.zion.common.basic;
 public enum ExpireTagTypeEnum {
 
     primary("primary")
-    ,SUCCESS("success")
-    ,INFO("info")
-    ,WARNING("warning")
-    ,DANGER("danger");
+    ,success("success")
+    ,info("info")
+    ,warning("warning")
+    ,danger("danger");
 
     private String code;
     ExpireTagTypeEnum(String code){
