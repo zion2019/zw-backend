@@ -39,6 +39,10 @@ public class Task  extends BaseEntity {
 
     private String routineCron;
 
+    private Integer delayCount;
+
+    private boolean remind;
+
     @JsonIgnore
     private LocalDateTime gtEndTime;
 

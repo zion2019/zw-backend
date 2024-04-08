@@ -2,9 +2,14 @@ package com.zion.learning.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.lang.Assert;
 import com.zion.common.basic.ExpireTagTypeEnum;
 import com.zion.common.basic.Page;
+import com.zion.common.basic.ServiceException;
 import com.zion.common.vo.learning.request.TaskQO;
 import com.zion.common.vo.learning.request.TodoTaskQO;
 import com.zion.common.vo.learning.response.TaskExpireTagVo;
@@ -28,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -55,9 +61,9 @@ public class TaskServiceImpl implements TaskService {
                 .userId(qo.getUserId())
                 .build();
         // limited today task
-        if(qo.isToday()){
-            condition.setGtEndTime(LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT));
-        }
+//        if(qo.isToday()){
+//            condition.setGtEndTime(LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT));
+//        }
         condition.sort("endTime", Sort.Direction.DESC);
         Page<Task> page = taskDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize())
                 , Task.class, condition);
@@ -142,6 +148,8 @@ public class TaskServiceImpl implements TaskService {
         }else{
             task = Task.builder()
                     .userId(userId)
+                    .delayCount(0)
+                    .remind(false)
                     .finished(false)
                     .build();
         }
@@ -165,8 +173,16 @@ public class TaskServiceImpl implements TaskService {
         if(CollUtil.isEmpty(tasks)){
             return null;
         }
+        TaskVO taskVO = BeanUtil.copyProperties(tasks.get(0), TaskVO.class);
+        if(taskVO.getTopicId() == null){
+            return taskVO;
+        }
+        List<TopicVO> topicTitles = topicService.getTitleByIds(ListUtil.of(taskVO.getTopicId()));
+        if(CollUtil.isNotEmpty(topicTitles)){
+            taskVO.setTopicFulTitle(topicTitles.get(0).getFullTitle());
+        }
 
-        return BeanUtil.copyProperties(tasks.get(0),TaskVO.class);
+        return taskVO;
     }
 
     @Override
@@ -187,5 +203,32 @@ public class TaskServiceImpl implements TaskService {
         String content = "Hey,Zion,今日需要完成任务喔！";
         String receiptId = "";
         pushService.push(content,receiptId);
+    }
+
+    @Override
+    public boolean delay(Long taskId, Long currentUserId) {
+        Task task = taskDao.getById(taskId);
+        Assert.isTrue(!task.getFinished(),()->new ServiceException("The task is finish"));
+
+        // 每次推迟 +1 小时
+        if(task.getDelayCount() == null){
+            task.setDelayCount(0);
+        }
+        task.setDelayCount(task.getDelayCount()+1);
+        task.setEndTime(LocalDateTimeUtil.offset(task.getEndTime(),task.getDelayCount(), ChronoUnit.HOURS));
+        task.setRemind(false);
+        taskDao.save(task);
+
+        return false;
+    }
+
+    @Override
+    public boolean finish(Long taskId, Long currentUserId) {
+        Task task = taskDao.getById(taskId);
+        Assert.isTrue(!task.getFinished(),()->new ServiceException("The task is finish"));
+        task.setActualCloseTime(LocalDateTime.now());
+        task.setFinished(true);
+        taskDao.save(task);
+        return true;
     }
 }

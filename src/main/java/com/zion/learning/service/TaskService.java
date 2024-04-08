@@ -17,6 +17,10 @@ public interface TaskService {
 
     boolean remove(Long taskId);
 
+    boolean delay(Long taskId, Long currentUserId);
+
+    boolean finish(Long taskId, Long currentUserId);
+
     /**
      * Scan todo_task and remind.
      */

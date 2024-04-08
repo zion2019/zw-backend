@@ -38,8 +38,13 @@ public class TaskController extends BaseController {
         return R.ok(taskService.remove(taskId));
     }
 
-    @GetMapping("/test")
-    public void test(){
-        taskService.scanAndRemind();
+    @PutMapping("/delay/{taskId}")
+    public R<Boolean> delay(@PathVariable("taskId")Long taskId){
+        return R.ok(taskService.delay(taskId,getCurrentUserId()));
+    }
+
+    @PutMapping("/finish/{taskId}")
+    public R<Boolean> finish(@PathVariable("taskId")Long taskId){
+        return R.ok(taskService.finish(taskId,getCurrentUserId()));
     }
 }

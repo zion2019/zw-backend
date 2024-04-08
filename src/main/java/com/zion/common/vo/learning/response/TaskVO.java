@@ -32,4 +32,6 @@ public class TaskVO implements Serializable {
 
     private String routineCron;
 
+    private String topicFulTitle;
+
 }
