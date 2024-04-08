@@ -28,3 +28,9 @@ spring:
     allow-circular-references: true
 server:
   port: 9302
+
+zw:
+  WeChat:
+    PushPlus:
+      token: 'YourTokenHere'
+      secretKey: 'YourSecretKeyHere'

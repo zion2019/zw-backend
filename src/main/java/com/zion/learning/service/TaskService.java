@@ -16,4 +16,9 @@ public interface TaskService {
     TaskVO info(Long currentUserId, Long taskId);
 
     boolean remove(Long taskId);
+
+    /**
+     * Scan todo_task and remind.
+     */
+    void scanAndRemind();
 }

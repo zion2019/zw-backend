@@ -38,5 +38,8 @@ public class TaskController extends BaseController {
         return R.ok(taskService.remove(taskId));
     }
 
-
+    @GetMapping("/test")
+    public void test(){
+        taskService.scanAndRemind();
+    }
 }

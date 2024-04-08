@@ -13,6 +13,7 @@ import com.zion.common.vo.learning.response.TodoTaskVO;
 import com.zion.common.vo.learning.response.TopicVO;
 import com.zion.learning.dao.TaskDao;
 import com.zion.learning.model.Task;
+import com.zion.learning.service.PushService;
 import com.zion.learning.service.TaskService;
 import com.zion.learning.service.TopicService;
 import jakarta.annotation.Resource;
@@ -40,6 +41,9 @@ public class TaskServiceImpl implements TaskService {
 
     @Resource
     private TopicService topicService;
+
+    @Resource
+    private PushService pushService;
 
     @Override
     public Page<TodoTaskVO> page(TodoTaskQO qo) {
@@ -171,5 +175,17 @@ public class TaskServiceImpl implements TaskService {
         condition.setId(taskId);
         taskDao.remove(condition);
         return true;
+    }
+
+    @Override
+    public void scanAndRemind() {
+
+        // TODO Scan task that start after half an hour
+
+
+        // TODO push
+        String content = "Hey,Zion,今日需要完成任务喔！";
+        String receiptId = "";
+        pushService.push(content,receiptId);
     }
 }
