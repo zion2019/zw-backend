@@ -38,7 +38,11 @@ public class SpringSecurityUtil {
      * @return
      */
     public static String getCurrentUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+        try{
+            return SecurityContextHolder.getContext().getAuthentication().getName();
+        }catch (Exception e){
+            return "NON-USER";
+        }
     }
 
 

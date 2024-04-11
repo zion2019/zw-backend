@@ -34,7 +34,7 @@ public class PushPlusService implements PushService {
     private String secretKey;
 
     @Override
-    public void push(String content, String receiptId) {
+    public boolean push(String content, String receiptId) {
         String accessToken = this.getAccessToken();
         Assert.isTrue(StrUtil.isNotBlank(accessToken),()->new ServiceException("To push wechat notice error,the token is null"));
         Map<String,String> map = new HashMap<>(6);
@@ -55,9 +55,10 @@ public class PushPlusService implements PushService {
                 .execute();
         if(rsp == null || !rsp.isOk()){
             log.error("Failed to get access key. Error:{}",rsp!=null?rsp.body():"NO RSP");
-            return ;
+            return false;
         }
         log.info("Sending msg rsp:{}",rsp);
+        return true;
     }
 
     private String getAccessToken() {

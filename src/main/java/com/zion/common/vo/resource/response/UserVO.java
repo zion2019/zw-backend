@@ -23,6 +23,8 @@ public class UserVO implements UserDetails {
 
     private String token;
 
+    private String pushPlusId;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return new ArrayList<>(0);

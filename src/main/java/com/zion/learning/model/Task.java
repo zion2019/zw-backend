@@ -41,9 +41,14 @@ public class Task  extends BaseEntity {
 
     private Integer delayCount;
 
-    private boolean remind;
+    private Boolean remind;
 
     @JsonIgnore
     private LocalDateTime gtEndTime;
+
+    @JsonIgnore
+    private LocalDateTime fromStartTime;
+    @JsonIgnore
+    private LocalDateTime toStartTime;
 
 }

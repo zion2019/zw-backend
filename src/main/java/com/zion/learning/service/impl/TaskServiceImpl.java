@@ -7,6 +7,7 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.StrUtil;
 import com.zion.common.basic.ExpireTagTypeEnum;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
@@ -16,14 +17,20 @@ import com.zion.common.vo.learning.response.TaskExpireTagVo;
 import com.zion.common.vo.learning.response.TaskVO;
 import com.zion.common.vo.learning.response.TodoTaskVO;
 import com.zion.common.vo.learning.response.TopicVO;
+import com.zion.common.vo.resource.request.UserQO;
+import com.zion.common.vo.resource.response.UserVO;
 import com.zion.learning.dao.TaskDao;
 import com.zion.learning.model.Task;
 import com.zion.learning.service.PushService;
 import com.zion.learning.service.TaskService;
 import com.zion.learning.service.TopicService;
+import com.zion.resource.user.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.aggregation.DateOperators;
+import org.springframework.scheduling.support.CronExpression;
+import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +57,9 @@ public class TaskServiceImpl implements TaskService {
 
     @Resource
     private PushService pushService;
+
+    @Resource
+    private UserService userService;
 
     @Override
     public Page<TodoTaskVO> page(TodoTaskQO qo) {
@@ -195,14 +205,38 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void scanAndRemind() {
+        log.info("To starting scan per remind tasks...");
+        // from now to now + half an hour
+        LocalDateTime fromStartTime = LocalDateTimeUtil.now();
+        LocalDateTime toStartTime = LocalDateTimeUtil.offset(fromStartTime, 30, ChronoUnit.MINUTES);
 
-        // TODO Scan task that start after half an hour
 
+        List<Task> remindTasks = taskDao.condition(Task.builder()
+                .remind(false)
+                .finished(false)
+                .fromStartTime(fromStartTime)
+                .toStartTime(toStartTime)
+                .build());
+        if(CollUtil.isEmpty(remindTasks)){
+            log.warn("No per remind tasks...");
+            return;
+        }
 
-        // TODO push
-        String content = "Hey,Zion,今日需要完成任务喔！";
-        String receiptId = "";
-        pushService.push(content,receiptId);
+        for (Task remindTask : remindTasks) {
+            String content = remindTask.getTitle();
+            String receiptId = null;
+            UserVO userVO = userService.conditionOne(UserQO.builder().id(remindTask.getUserId()).build());
+            if(userVO != null){
+                receiptId = userVO.getPushPlusId();
+            }
+
+            boolean pushed = pushService.push(content, receiptId);
+            if(pushed){
+                remindTask.setRemind(true);
+                taskDao.save(remindTask);
+            }
+
+        }
     }
 
     @Override
@@ -226,9 +260,35 @@ public class TaskServiceImpl implements TaskService {
     public boolean finish(Long taskId, Long currentUserId) {
         Task task = taskDao.getById(taskId);
         Assert.isTrue(!task.getFinished(),()->new ServiceException("The task is finish"));
-        task.setActualCloseTime(LocalDateTime.now());
-        task.setFinished(true);
-        taskDao.save(task);
+
+        try{
+            // routine task
+            if(task.getRoutine() && StrUtil.isNotBlank(task.getRoutineCron())){
+                CronExpression expression = CronExpression.parse(task.getRoutineCron());
+                LocalDateTime next = expression.next(LocalDateTime.now());
+                if(next == null){
+                    throw new ServiceException("The CRON expression fail");
+                }
+                Duration between = LocalDateTimeUtil.between(next,LocalDateTime.now());
+                long betweenHour = between.toHours();
+
+                // Set net time
+                task.setStartTime(next);
+                task.setEndTime(LocalDateTimeUtil.offset(task.getEndTime(),betweenHour,ChronoUnit.HOURS));
+                // only remind once in one day
+                task.setRemind(betweenHour >= 8);
+
+            }else{
+                task.setActualCloseTime(LocalDateTime.now());
+                task.setFinished(true);
+            }
+
+            taskDao.save(task);
+        }catch (Exception e){
+            log.error("FINISH TASK ERROR",e);
+            throw new ServiceException("unknown error");
+        }
+
         return true;
     }
 }
