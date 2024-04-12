@@ -34,13 +34,13 @@ public class PushPlusService implements PushService {
     private String secretKey;
 
     @Override
-    public boolean push(String content, String receiptId) {
+    public boolean push(String title,String content, String receiptId) {
         String accessToken = this.getAccessToken();
         Assert.isTrue(StrUtil.isNotBlank(accessToken),()->new ServiceException("To push wechat notice error,the token is null"));
         Map<String,String> map = new HashMap<>(6);
 
         map.put("token", accessToken);
-        map.put("title", "Z-Learning Notice");
+        map.put("title", title);
         map.put("content", content);
         map.put("channel", "wechat");
         map.put("template", "html");

@@ -11,5 +11,5 @@ public interface PushService {
      * @param content content
      * @param receiptId wxId/...
      */
-    boolean push(String content, String receiptId);
+    boolean push(String title,String content, String receiptId);
 }

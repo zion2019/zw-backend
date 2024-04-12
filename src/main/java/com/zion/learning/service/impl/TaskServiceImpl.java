@@ -2,6 +2,7 @@ package com.zion.learning.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateUtil;
@@ -39,6 +40,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.*;
@@ -203,6 +205,12 @@ public class TaskServiceImpl implements TaskService {
         return true;
     }
 
+    private final static String CONTENT_FORMAT_TEMPLATE = "<p><strong>开始时间：</strong><span style=\"color: rgb(192, 80, 77);\">${startTime}</span></p>" +
+            "<p><strong>结束时间：</strong><span style=\"color: rgb(192, 80, 77);\">${endTime}</span></p>" +
+            "<p><strong>任务标题：</strong>${title}</p>" +
+            "<p><strong>所属主题：</strong><span style=\"color: rgb(31, 73, 125);\"><em>${topicFulName}</em></span></p>" +
+            "<p><strong>任务内容：</strong></p><table><tbody><tr class=\"firstRow\"><td width=\"811\" valign=\"top\" style=\"word-break: break-all; border-width: 1px; border-style: solid;\">${content}</td></tr></tbody></table><p><br/></p><p><br/></p><p><br/></p>";
+
     @Override
     public void scanAndRemind() {
         log.info("To starting scan per remind tasks...");
@@ -222,19 +230,34 @@ public class TaskServiceImpl implements TaskService {
             return;
         }
 
+        Map<Long, String> topicTitleMap = new HashMap<>();
+        List<TopicVO> topicVOS = topicService.getTitleByIds(remindTasks.stream().map(Task::getTopicId).collect(Collectors.toList()));
+        if(CollectionUtil.isNotEmpty(topicVOS)){
+            topicTitleMap = topicVOS.stream().collect(Collectors.toMap(TopicVO::getId, TopicVO::getFullTitle, (t1, t2) -> t1));
+        }
+
         for (Task remindTask : remindTasks) {
-            String content = remindTask.getTitle();
+
+
+            String content = CONTENT_FORMAT_TEMPLATE.replace("${startTime}",remindTask.getStartTime() != null?LocalDateTimeUtil.format(remindTask.getStartTime(), "yyyy-MM-dd HH:mm:ss"):"-")
+                    .replace("${endTime}",remindTask.getEndTime() != null?LocalDateTimeUtil.format(remindTask.getEndTime(), "yyyy-MM-dd HH:mm:ss"):"-")
+                    .replace("${title}",StrUtil.isNotBlank(remindTask.getTitle())?remindTask.getTitle():"-")
+                    .replace("${content}",StrUtil.isNotBlank(remindTask.getContent())?remindTask.getContent():"-")
+                    .replace("${topicFulName}", topicTitleMap.getOrDefault(remindTask.getTopicId(), "-"))
+                    ;
+
+
             String receiptId = null;
             UserVO userVO = userService.conditionOne(UserQO.builder().id(remindTask.getUserId()).build());
             if(userVO != null){
                 receiptId = userVO.getPushPlusId();
             }
-
-            boolean pushed = pushService.push(content, receiptId);
+            boolean pushed = pushService.push(remindTask.getTitle(),content, receiptId);
             if(pushed){
                 remindTask.setRemind(true);
                 taskDao.save(remindTask);
             }
+            log.info("{}",content);
 
         }
     }
@@ -270,13 +293,15 @@ public class TaskServiceImpl implements TaskService {
                     throw new ServiceException("The CRON expression fail");
                 }
                 Duration between = LocalDateTimeUtil.between(next,LocalDateTime.now());
-                long betweenHour = between.toHours();
+                long betweenHour = between.toSeconds();
 
                 // Set net time
                 task.setStartTime(next);
-                task.setEndTime(LocalDateTimeUtil.offset(task.getEndTime(),betweenHour,ChronoUnit.HOURS));
+                task.setEndTime(LocalDateTimeUtil.offset(task.getEndTime(),betweenHour,ChronoUnit.SECONDS));
                 // only remind once in one day
-                task.setRemind(betweenHour >= 8);
+                if(task.getRemind()){
+                    task.setRemind(betweenHour/(60*60) < 8);
+                }
 
             }else{
                 task.setActualCloseTime(LocalDateTime.now());
