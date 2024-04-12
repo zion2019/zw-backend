@@ -18,9 +18,13 @@ public class TaskVO implements Serializable {
 
     private String content;
 
-    private LocalDateTime startTime;
+    private LocalDateTime taskTime;
 
-    private LocalDateTime endTime;
+    private Integer remindTimeType;
+
+    private Integer remindTimeNum;
+
+    private LocalDateTime remindTime;
 
     private Boolean routine;
 

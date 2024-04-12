@@ -20,6 +20,7 @@ import com.zion.common.vo.learning.response.TodoTaskVO;
 import com.zion.common.vo.learning.response.TopicVO;
 import com.zion.common.vo.resource.request.UserQO;
 import com.zion.common.vo.resource.response.UserVO;
+import com.zion.learning.common.RemindType;
 import com.zion.learning.dao.TaskDao;
 import com.zion.learning.model.Task;
 import com.zion.learning.service.PushService;
@@ -72,11 +73,8 @@ public class TaskServiceImpl implements TaskService {
                 .finished(false)
                 .userId(qo.getUserId())
                 .build();
-        // limited today task
-//        if(qo.isToday()){
-//            condition.setGtEndTime(LocalDateTime.of(LocalDate.now(), LocalTime.MIDNIGHT));
-//        }
-        condition.sort("endTime", Sort.Direction.DESC);
+
+        condition.sort("taskTime", Sort.Direction.DESC);
         Page<Task> page = taskDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize())
                 , Task.class, condition);
 
@@ -103,16 +101,12 @@ public class TaskServiceImpl implements TaskService {
 
                 // calculate expire
                 if(!task.getFinished()){
-                    // Not Start
-                    if(LocalDateTime.now().isAfter(task.getStartTime())){
-                        vo.setExpireTag(this.calculateExpire(task.getStartTime(),LocalDateTime.now(),"Begin With "));
+                    if(LocalDateTime.now().isAfter(task.getTaskTime())){
+                        vo.setExpireTag(this.calculateExpire(task.getTaskTime(),LocalDateTime.now(),"Expired "));
                     }else{
-                        if(LocalDateTime.now().isAfter(task.getEndTime())){
-                            vo.setExpireTag(this.calculateExpire(LocalDateTime.now(),task.getEndTime(),"Expired "));
-                        }else{
-                            vo.setExpireTag(this.calculateExpire(task.getEndTime(),LocalDateTime.now(),"Last "));
-                        }
+                        vo.setExpireTag(this.calculateExpire(LocalDateTime.now(),task.getTaskTime(),"Begin With "));
                     }
+
                 }
             }
 
@@ -165,16 +159,24 @@ public class TaskServiceImpl implements TaskService {
                     .finished(false)
                     .build();
         }
-
+        task.setRemindTimeType(qo.getRemindTimeType());
+        task.setRemindTimeNum(qo.getRemindTimeNum());
         task.setContent(qo.getContent());
-        task.setEndTime(qo.getEndTime());
-        task.setStartTime(qo.getStartTime());
+        task.setTaskTime(qo.getTaskTime());
         task.setTitle(qo.getTitle());
         task.setRoutine(qo.isRoutine());
         task.setRoutineCron(qo.getRoutineCron());
         task.setTopicId(qo.getTopicId());
+        // calculate remind time
+        task.setRemindTime(this.calcRemindTime(task.getRemindTimeType(),task.getRemindTimeNum(),task.getTaskTime()));
         taskDao.save(task);
         return true;
+    }
+
+    private LocalDateTime calcRemindTime(Integer remindTimeType, Integer remindTimeNum, LocalDateTime taskTime) {
+        RemindType remindType = RemindType.getType(remindTimeType);
+        remindTimeNum = remindTimeNum == null ? 30 : remindTimeNum;
+        return LocalDateTimeUtil.offset(taskTime, -remindTimeNum,remindType.getChronoUnit());
     }
 
     @Override
@@ -205,8 +207,7 @@ public class TaskServiceImpl implements TaskService {
         return true;
     }
 
-    private final static String CONTENT_FORMAT_TEMPLATE = "<p><strong>开始时间：</strong><span style=\"color: rgb(192, 80, 77);\">${startTime}</span></p>" +
-            "<p><strong>结束时间：</strong><span style=\"color: rgb(192, 80, 77);\">${endTime}</span></p>" +
+    private final static String CONTENT_FORMAT_TEMPLATE = "<p><strong>任务时间：</strong><span style=\"color: rgb(192, 80, 77);\">${taskTime}</span></p>" +
             "<p><strong>任务标题：</strong>${title}</p>" +
             "<p><strong>所属主题：</strong><span style=\"color: rgb(31, 73, 125);\"><em>${topicFulName}</em></span></p>" +
             "<p><strong>任务内容：</strong></p><table><tbody><tr class=\"firstRow\"><td width=\"811\" valign=\"top\" style=\"word-break: break-all; border-width: 1px; border-style: solid;\">${content}</td></tr></tbody></table><p><br/></p><p><br/></p><p><br/></p>";
@@ -222,8 +223,8 @@ public class TaskServiceImpl implements TaskService {
         List<Task> remindTasks = taskDao.condition(Task.builder()
                 .remind(false)
                 .finished(false)
-                .fromStartTime(fromStartTime)
-                .toStartTime(toStartTime)
+                .fromTaskTime(fromStartTime)
+                .toTaskTime(toStartTime)
                 .build());
         if(CollUtil.isEmpty(remindTasks)){
             log.warn("No per remind tasks...");
@@ -239,13 +240,11 @@ public class TaskServiceImpl implements TaskService {
         for (Task remindTask : remindTasks) {
 
 
-            String content = CONTENT_FORMAT_TEMPLATE.replace("${startTime}",remindTask.getStartTime() != null?LocalDateTimeUtil.format(remindTask.getStartTime(), "yyyy-MM-dd HH:mm:ss"):"-")
-                    .replace("${endTime}",remindTask.getEndTime() != null?LocalDateTimeUtil.format(remindTask.getEndTime(), "yyyy-MM-dd HH:mm:ss"):"-")
+            String content = CONTENT_FORMAT_TEMPLATE.replace("${taskTime}",remindTask.getTaskTime() != null?LocalDateTimeUtil.format(remindTask.getTaskTime(), "yyyy-MM-dd HH:mm:ss"):"-")
                     .replace("${title}",StrUtil.isNotBlank(remindTask.getTitle())?remindTask.getTitle():"-")
                     .replace("${content}",StrUtil.isNotBlank(remindTask.getContent())?remindTask.getContent():"-")
                     .replace("${topicFulName}", topicTitleMap.getOrDefault(remindTask.getTopicId(), "-"))
                     ;
-
 
             String receiptId = null;
             UserVO userVO = userService.conditionOne(UserQO.builder().id(remindTask.getUserId()).build());
@@ -272,7 +271,7 @@ public class TaskServiceImpl implements TaskService {
             task.setDelayCount(0);
         }
         task.setDelayCount(task.getDelayCount()+1);
-        task.setEndTime(LocalDateTimeUtil.offset(task.getEndTime(),task.getDelayCount(), ChronoUnit.HOURS));
+        task.setTaskTime(LocalDateTimeUtil.offset(task.getTaskTime(),task.getDelayCount(), ChronoUnit.HOURS));
         task.setRemind(false);
         taskDao.save(task);
 
@@ -296,8 +295,9 @@ public class TaskServiceImpl implements TaskService {
                 long betweenHour = between.toSeconds();
 
                 // Set net time
-                task.setStartTime(next);
-                task.setEndTime(LocalDateTimeUtil.offset(task.getEndTime(),betweenHour,ChronoUnit.SECONDS));
+                task.setTaskTime(next);
+                task.setRemindTime(this.calcRemindTime(task.getRemindTimeType(),task.getRemindTimeNum(),task.getTaskTime()));
+
                 // only remind once in one day
                 if(task.getRemind()){
                     task.setRemind(betweenHour/(60*60) < 8);

@@ -25,9 +25,13 @@ public class Task  extends BaseEntity {
 
     private String content;
 
-    private LocalDateTime startTime;
+    private LocalDateTime taskTime;
 
-    private LocalDateTime endTime;
+    private Integer remindTimeType;
+
+    private Integer remindTimeNum;
+
+    private LocalDateTime remindTime;
 
     private Boolean routine;
 
@@ -44,11 +48,8 @@ public class Task  extends BaseEntity {
     private Boolean remind;
 
     @JsonIgnore
-    private LocalDateTime gtEndTime;
-
+    private LocalDateTime fromTaskTime;
     @JsonIgnore
-    private LocalDateTime fromStartTime;
-    @JsonIgnore
-    private LocalDateTime toStartTime;
+    private LocalDateTime toTaskTime;
 
 }

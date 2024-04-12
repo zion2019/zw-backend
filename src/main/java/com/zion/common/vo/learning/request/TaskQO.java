@@ -17,15 +17,18 @@ public class TaskQO {
     private Long topicId;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime startTime;
-
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime endTime;
+    private LocalDateTime taskTime;
 
     private boolean routine;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime actualCloseTime;
+
+    private Integer remindTimeType;
+
+    private Integer remindTimeNum;
+
+    private LocalDateTime remindTime;
 
     private String routineCron;
 
