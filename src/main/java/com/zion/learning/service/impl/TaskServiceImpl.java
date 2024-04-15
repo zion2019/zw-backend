@@ -4,8 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.collection.ListUtil;
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
@@ -30,21 +28,17 @@ import com.zion.resource.user.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.aggregation.DateOperators;
 import org.springframework.scheduling.support.CronExpression;
-import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -214,20 +208,19 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void scanAndRemind() {
-        log.info("To starting scan per remind tasks...");
+        log.debug("To starting scan per remind tasks...");
         // from now to now + half an hour
         LocalDateTime fromStartTime = LocalDateTimeUtil.now();
-        LocalDateTime toStartTime = LocalDateTimeUtil.offset(fromStartTime, 30, ChronoUnit.MINUTES);
-
+        LocalDateTime toStartTime = LocalDateTimeUtil.offset(fromStartTime, 5, ChronoUnit.MINUTES);
 
         List<Task> remindTasks = taskDao.condition(Task.builder()
                 .remind(false)
                 .finished(false)
-                .fromTaskTime(fromStartTime)
-                .toTaskTime(toStartTime)
+                .fromRemindTime(fromStartTime)
+                .toRemindTime(toStartTime)
                 .build());
         if(CollUtil.isEmpty(remindTasks)){
-            log.warn("No per remind tasks...");
+            log.debug("No per remind tasks...");
             return;
         }
 

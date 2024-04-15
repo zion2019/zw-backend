@@ -48,8 +48,8 @@ public class Task  extends BaseEntity {
     private Boolean remind;
 
     @JsonIgnore
-    private LocalDateTime fromTaskTime;
+    private LocalDateTime fromRemindTime;
     @JsonIgnore
-    private LocalDateTime toTaskTime;
+    private LocalDateTime toRemindTime;
 
 }
