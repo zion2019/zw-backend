@@ -67,7 +67,9 @@ public class TaskServiceImpl implements TaskService {
                 .finished(false)
                 .userId(qo.getUserId())
                 .build();
-
+        if(qo.getTopicId() != null){
+            condition.setTopicId(qo.getTopicId());
+        }
         condition.sort("taskTime", Sort.Direction.DESC);
         Page<Task> page = taskDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize())
                 , Task.class, condition);
@@ -175,13 +177,14 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskVO info(Long currentUserId, Long taskId) {
+        TaskVO taskVO = new TaskVO();
         Task condition = Task.builder().userId(currentUserId).build();
         condition.setId(taskId);
         List<Task> tasks = taskDao.condition(condition);
         if(CollUtil.isEmpty(tasks)){
-            return null;
+            return taskVO;
         }
-        TaskVO taskVO = BeanUtil.copyProperties(tasks.get(0), TaskVO.class);
+        taskVO = BeanUtil.copyProperties(tasks.get(0), TaskVO.class);
         if(taskVO.getTopicId() == null){
             return taskVO;
         }
@@ -280,7 +283,7 @@ public class TaskServiceImpl implements TaskService {
             // routine task
             if(task.getRoutine() && StrUtil.isNotBlank(task.getRoutineCron())){
                 CronExpression expression = CronExpression.parse(task.getRoutineCron());
-                LocalDateTime next = expression.next(LocalDateTime.now());
+                LocalDateTime next = expression.next(task.getTaskTime());
                 if(next == null){
                     throw new ServiceException("The CRON expression fail");
                 }

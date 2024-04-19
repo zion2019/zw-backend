@@ -14,4 +14,6 @@ public class TodoTaskQO extends BasicPageRequest implements Serializable {
 
     private boolean today;
 
+    private Long topicId;
+
 }
