@@ -283,7 +283,7 @@ public class TaskServiceImpl implements TaskService {
             // routine task
             if(task.getRoutine() && StrUtil.isNotBlank(task.getRoutineCron())){
                 CronExpression expression = CronExpression.parse(task.getRoutineCron());
-                LocalDateTime next = expression.next(task.getTaskTime());
+                LocalDateTime next = expression.next(task.getTaskTime().isAfter(LocalDateTime.now())?task.getTaskTime():LocalDateTime.now());
                 if(next == null){
                     throw new ServiceException("The CRON expression fail");
                 }
