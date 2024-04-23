@@ -70,7 +70,7 @@ public class TaskServiceImpl implements TaskService {
         if(qo.getTopicId() != null){
             condition.setTopicId(qo.getTopicId());
         }
-        condition.sort("taskTime", Sort.Direction.DESC);
+        condition.sort("taskTime", Sort.Direction.ASC);
         Page<Task> page = taskDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize())
                 , Task.class, condition);
 
