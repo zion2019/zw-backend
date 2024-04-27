@@ -44,9 +44,14 @@ public class TopicServiceImpl implements TopicService {
 
         Assert.isTrue(CharSequenceUtil.isNotBlank(qo.getTitle()),"The title is required!");
         Assert.isTrue(qo.getUserId() != null,"The userId is required!");
+        Assert.isTrue(qo.getUserId() != null,"The code is required!");
 
         String fullPath = "0";
         String fullParentName = "";
+
+        // code 是否唯一
+        Assert.isTrue(topicDao.conditionCount(Topic.builder().code(qo.getCode()).excludeId(qo.getId()).build()) == 0
+                ,"The code is "+qo.getCode()+" exists");
 
         // 更新逻辑
         if(qo.getId() != null){

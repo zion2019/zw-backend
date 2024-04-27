@@ -16,6 +16,8 @@ public class Topic  extends BaseEntity {
 
     private String title;
 
+    private String code;
+
     private String background;
 
     private Long parentId;

@@ -18,6 +18,8 @@ public class TopicVO implements Serializable {
 
     private String background;
 
+    private String code;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long parentId;
 

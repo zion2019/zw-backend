@@ -12,6 +12,8 @@ public class TopicQO extends Page {
 
     private String title;
 
+    private String code;
+
     private String background;
 
     private Long parentId;

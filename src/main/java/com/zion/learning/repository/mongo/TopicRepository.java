@@ -1,6 +1,8 @@
 package com.zion.learning.repository.mongo;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.StrUtil;
 import com.zion.common.basic.CommonConstant;
 import com.zion.learning.dao.TopicDao;
 import com.zion.learning.model.Topic;
@@ -28,11 +30,14 @@ public class TopicRepository extends ZWMongoBasicRep<Topic> implements TopicDao 
         if(condition.getUserId() != null){
             query.addCriteria(Criteria.where("userId").is(condition.getUserId()));
         }
-        if(condition.getExcludeId() != null){
+        if(condition.getExcludeId() != null && condition.getExcludeId() != null){
             query.addCriteria(Criteria.where("id").ne(condition.getExcludeId()));
         }
-        if(condition.getIds() != null){
+        if(condition.getIds() != null && CollUtil.isNotEmpty(condition.getIds())){
             query.addCriteria(Criteria.where("id").in(condition.getIds()));
+        }
+        if(condition.getCode() != null && StrUtil.isNotBlank(condition.getCode())){
+            query.addCriteria(Criteria.where("code").in(condition.getCode()));
         }
         if(condition.getIncludeFields() != null && condition.getIncludeFields().length > 0){
             query.fields().include(condition.getIncludeFields());
