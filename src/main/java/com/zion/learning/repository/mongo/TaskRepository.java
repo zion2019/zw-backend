@@ -30,6 +30,14 @@ public class TaskRepository  extends ZWMongoBasicRep<Task> implements TaskDao {
             query.addCriteria(Criteria.where("remindTime").gte(condition.getFromRemindTime()).lte(condition.getToRemindTime()));
         }
 
+        if(condition.getFromTaskTime() != null && condition.getToTaskTime() != null){
+            query.addCriteria(Criteria.where("taskTime").gte(condition.getFromTaskTime()).lte(condition.getToTaskTime()));
+        }
+
+        if(condition.getLtTaskTime() != null){
+            query.addCriteria(Criteria.where("taskTime").lte(condition.getLtTaskTime()));
+        }
+
 
         return query;
     }

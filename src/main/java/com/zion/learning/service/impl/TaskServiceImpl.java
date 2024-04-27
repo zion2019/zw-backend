@@ -10,6 +10,8 @@ import cn.hutool.core.util.StrUtil;
 import com.zion.common.basic.ExpireTagTypeEnum;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
+import com.zion.common.vo.learning.request.TaskDelayQO;
+import com.zion.common.vo.learning.request.TaskFinishQO;
 import com.zion.common.vo.learning.request.TaskQO;
 import com.zion.common.vo.learning.request.TodoTaskQO;
 import com.zion.common.vo.learning.response.TaskExpireTagVo;
@@ -18,9 +20,13 @@ import com.zion.common.vo.learning.response.TodoTaskVO;
 import com.zion.common.vo.learning.response.TopicVO;
 import com.zion.common.vo.resource.request.UserQO;
 import com.zion.common.vo.resource.response.UserVO;
-import com.zion.learning.common.RemindType;
+import com.zion.learning.common.TaskStatus;
+import com.zion.learning.common.TaskTimeType;
+import com.zion.learning.common.TaskOperationType;
 import com.zion.learning.dao.TaskDao;
+import com.zion.learning.dao.TaskOperationDao;
 import com.zion.learning.model.Task;
+import com.zion.learning.model.TaskOperation;
 import com.zion.learning.service.PushService;
 import com.zion.learning.service.TaskService;
 import com.zion.learning.service.TopicService;
@@ -48,6 +54,9 @@ public class TaskServiceImpl implements TaskService {
 
     @Resource
     private TaskDao taskDao;
+
+    @Resource
+    private TaskOperationDao taskOperationDao;
 
     @Resource
     private TopicService topicService;
@@ -137,6 +146,8 @@ public class TaskServiceImpl implements TaskService {
             vo.setTagType(ExpireTagTypeEnum.warning);
             vo.setTagName(expireType+(int)(remainingTime.toDays() / 365)+" years");
         }
+
+        vo.setTagType("Expired ".equals(expireType)?ExpireTagTypeEnum.danger:vo.getTagType());
         return vo;
     }
 
@@ -145,15 +156,17 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(rollbackFor = Exception.class)
     public boolean addOrEditTask(Long userId,TaskQO qo){
         Task task ;
+        TaskOperationType taskOperationType ;
         if(qo.getId() != null){
             task = taskDao.getById(qo.getId());
+            taskOperationType = TaskOperationType.EDIT;
         }else{
             task = Task.builder()
                     .userId(userId)
                     .delayCount(0)
-                    .remind(false)
                     .finished(false)
                     .build();
+            taskOperationType = TaskOperationType.NEW;
         }
         task.setRemindTimeType(qo.getRemindTimeType());
         task.setRemindTimeNum(qo.getRemindTimeNum());
@@ -161,18 +174,37 @@ public class TaskServiceImpl implements TaskService {
         task.setTaskTime(qo.getTaskTime());
         task.setTitle(qo.getTitle());
         task.setRoutine(qo.isRoutine());
+        task.setStatus(TaskStatus.READING.getCode());
         task.setRoutineCron(qo.getRoutineCron());
         task.setTopicId(qo.getTopicId());
-        // calculate remind time
-        task.setRemindTime(this.calcRemindTime(task.getRemindTimeType(),task.getRemindTimeNum(),task.getTaskTime()));
+        this.calcRemindTime(task);
         taskDao.save(task);
+        // save operation
+        this.saveOperation(task.getId(),userId, taskOperationType,null);
+
         return true;
     }
 
-    private LocalDateTime calcRemindTime(Integer remindTimeType, Integer remindTimeNum, LocalDateTime taskTime) {
-        RemindType remindType = RemindType.getType(remindTimeType);
-        remindTimeNum = remindTimeNum == null ? 30 : remindTimeNum;
-        return LocalDateTimeUtil.offset(taskTime, -remindTimeNum,remindType.getChronoUnit());
+    /**
+     * save　task operation
+     * @param taskId
+     * @param userId
+     * @param operationType
+     * @param remark
+     */
+    private void saveOperation(Long taskId,Long userId, TaskOperationType operationType,String remark) {
+        taskOperationDao.save(TaskOperation.builder()
+                .taskId(taskId)
+                .remark(remark)
+                .userId(userId)
+                .type(operationType.getCode())
+                .build());
+    }
+
+    private LocalDateTime calcTaskTime(Integer taskTimeTypeCode, Integer taskTimeNum, LocalDateTime baseTime) {
+        TaskTimeType taskTimeType = TaskTimeType.getType(taskTimeTypeCode);
+        taskTimeNum = taskTimeNum == null ? 30 : taskTimeNum;
+        return LocalDateTimeUtil.offset(baseTime, -taskTimeNum, taskTimeType.getChronoUnit());
     }
 
     @Override
@@ -211,7 +243,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void scanAndRemind() {
-        log.debug("To starting scan per remind tasks...");
+        log.info("To starting scan per remind tasks...");
         // from now to now + half an hour
         LocalDateTime fromStartTime = LocalDateTimeUtil.now();
         LocalDateTime toStartTime = LocalDateTimeUtil.offset(fromStartTime, 5, ChronoUnit.MINUTES);
@@ -258,25 +290,60 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public boolean delay(Long taskId, Long currentUserId) {
-        Task task = taskDao.getById(taskId);
-        Assert.isTrue(!task.getFinished(),()->new ServiceException("The task is finish"));
+    public void autoFinish() {
 
-        // 每次推迟 +1 小时
-        if(task.getDelayCount() == null){
-            task.setDelayCount(0);
+        // The scan is based on tasks that have not been completed within 5 minutes of the current hour
+        LocalDateTime fromTaskTime = LocalDateTimeUtil.offset(LocalDateTime.now(), -1, ChronoUnit.HOURS);
+        log.info("The scanning range from: {}",LocalDateTimeUtil.formatNormal(fromTaskTime));
+
+        List<Task> tasks = taskDao.condition(Task.builder()
+                .finished(false)
+                .ltTaskTime(fromTaskTime)
+                .build());
+        if(CollUtil.isEmpty(tasks)){
+            log.debug("No un finish tasks...");
+            return;
         }
-        task.setDelayCount(task.getDelayCount()+1);
+        for (Task task : tasks) {
+            TaskFinishQO taskFinishQO = new TaskFinishQO();
+            taskFinishQO.setTaskId(task.getId());
+            taskFinishQO.setUserId(1L);
+            taskFinishQO.setFinishRemark("auto finish");
+            taskFinishQO.setTaskStatus(TaskStatus.CLOSED);
+            this.finish(taskFinishQO);
+        }
+
+    }
+
+    @Override
+    public boolean delay(TaskDelayQO delayQO) {
+
+        Task task = taskDao.getById(delayQO.getTaskId());
+        Assert.isTrue(!task.getFinished(),()->new ServiceException("The task is finish"));
+        task.setTaskTime(calcTaskTime(delayQO.getDelayTimeType(),delayQO.getDelayTimeNum(),LocalDateTimeUtil.now()));
+        task.setDelayCount(task.getDelayCount() == null ? 1 :task.getDelayCount()+1);
         task.setTaskTime(LocalDateTimeUtil.offset(task.getTaskTime(),task.getDelayCount(), ChronoUnit.HOURS));
-        task.setRemind(false);
+        this.calcRemindTime(task);
         taskDao.save(task);
+        // save operation
+        this.saveOperation(task.getId(),delayQO.getUserId(), TaskOperationType.DELAY,delayQO.getDelayReason());
 
         return false;
     }
 
+    private void calcRemindTime(Task task) {
+        // 1. base task time to calc remind time
+        LocalDateTime remindTime = calcTaskTime(task.getRemindTimeType(), task.getRemindTimeNum(), task.getRemindTime());
+
+        // 2. remind if  more than three hours
+        if(LocalDateTimeUtil.between(remindTime,LocalDateTime.now()).toHours() > 3){
+            task.setRemind(false);
+        }
+    }
+
     @Override
-    public boolean finish(Long taskId, Long currentUserId) {
-        Task task = taskDao.getById(taskId);
+    public boolean finish(TaskFinishQO qo) {
+        Task task = taskDao.getById(qo.getTaskId());
         Assert.isTrue(!task.getFinished(),()->new ServiceException("The task is finish"));
 
         try{
@@ -287,24 +354,19 @@ public class TaskServiceImpl implements TaskService {
                 if(next == null){
                     throw new ServiceException("The CRON expression fail");
                 }
-                Duration between = LocalDateTimeUtil.between(next,LocalDateTime.now());
-                long betweenHour = between.toSeconds();
 
                 // Set net time
                 task.setTaskTime(next);
-                task.setRemindTime(this.calcRemindTime(task.getRemindTimeType(),task.getRemindTimeNum(),task.getTaskTime()));
-
-                // only remind once in one day
-                if(task.getRemind()){
-                    task.setRemind(betweenHour/(60*60) < 8);
-                }
+                this.calcRemindTime(task);
 
             }else{
+                task.setStatus(qo.getTaskStatus().getCode());
                 task.setActualCloseTime(LocalDateTime.now());
                 task.setFinished(true);
             }
 
             taskDao.save(task);
+            this.saveOperation(task.getId(),qo.getUserId(),TaskOperationType.FINISH,qo.getFinishRemark());
         }catch (Exception e){
             log.error("FINISH TASK ERROR",e);
             throw new ServiceException("unknown error");

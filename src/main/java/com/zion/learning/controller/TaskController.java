@@ -2,10 +2,13 @@ package com.zion.learning.controller;
 
 import com.zion.common.basic.BaseController;
 import com.zion.common.basic.R;
+import com.zion.common.vo.learning.request.TaskDelayQO;
+import com.zion.common.vo.learning.request.TaskFinishQO;
 import com.zion.common.vo.learning.request.TaskQO;
 import com.zion.common.vo.learning.request.TodoTaskQO;
 import com.zion.common.vo.learning.response.TodoTaskVO;
 import com.zion.common.vo.learning.response.TaskVO;
+import com.zion.learning.common.TaskStatus;
 import com.zion.learning.service.TaskService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -38,13 +41,16 @@ public class TaskController extends BaseController {
         return R.ok(taskService.remove(taskId));
     }
 
-    @PutMapping("/delay/{taskId}")
-    public R<Boolean> delay(@PathVariable("taskId")Long taskId){
-        return R.ok(taskService.delay(taskId,getCurrentUserId()));
+    @PutMapping("/delay")
+    public R<Boolean> delay(@RequestBody TaskDelayQO delayQO){
+        delayQO.setUserId(getCurrentUserId());
+        return R.ok(taskService.delay(delayQO));
     }
 
-    @PutMapping("/finish/{taskId}")
-    public R<Boolean> finish(@PathVariable("taskId")Long taskId){
-        return R.ok(taskService.finish(taskId,getCurrentUserId()));
+    @PutMapping("/finish")
+    public R<Boolean> finish(@RequestBody TaskFinishQO qo){
+        qo.setUserId(getCurrentUserId());
+        qo.setTaskStatus(TaskStatus.FINISHED);
+        return R.ok(taskService.finish(qo));
     }
 }

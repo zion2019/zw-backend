@@ -20,4 +20,10 @@ public class TaskSchedule {
         taskService.scanAndRemind();
     }
 
+
+    @Scheduled(cron = "0 0/5 * * * ?")
+    public void autoFinish(){
+        taskService.autoFinish();
+    }
+
 }

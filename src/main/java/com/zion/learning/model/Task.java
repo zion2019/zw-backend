@@ -37,6 +37,8 @@ public class Task  extends BaseEntity {
 
     private LocalDateTime actualCloseTime;
 
+    private Integer status;
+
     private String closeRemark;
 
     private Boolean finished;
@@ -51,5 +53,12 @@ public class Task  extends BaseEntity {
     private LocalDateTime fromRemindTime;
     @JsonIgnore
     private LocalDateTime toRemindTime;
+
+    @JsonIgnore
+    private LocalDateTime fromTaskTime;
+    @JsonIgnore
+    private LocalDateTime toTaskTime;
+    @JsonIgnore
+    private LocalDateTime ltTaskTime;
 
 }

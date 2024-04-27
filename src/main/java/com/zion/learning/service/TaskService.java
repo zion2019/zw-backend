@@ -1,6 +1,8 @@
 package com.zion.learning.service;
 
 import com.zion.common.basic.Page;
+import com.zion.common.vo.learning.request.TaskDelayQO;
+import com.zion.common.vo.learning.request.TaskFinishQO;
 import com.zion.common.vo.learning.request.TaskQO;
 import com.zion.common.vo.learning.request.TodoTaskQO;
 import com.zion.common.vo.learning.response.TodoTaskVO;
@@ -17,12 +19,14 @@ public interface TaskService {
 
     boolean remove(Long taskId);
 
-    boolean delay(Long taskId, Long currentUserId);
+    boolean delay(TaskDelayQO delayQO);
 
-    boolean finish(Long taskId, Long currentUserId);
+    boolean finish(TaskFinishQO qo);
 
     /**
      * Scan todo_task and remind.
      */
     void scanAndRemind();
+
+    void autoFinish();
 }
