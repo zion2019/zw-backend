@@ -7,6 +7,9 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.cron.CronUtil;
+import cn.hutool.cron.pattern.CronPattern;
+import cn.hutool.cron.pattern.CronPatternUtil;
 import com.zion.common.basic.ExpireTagTypeEnum;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
@@ -41,10 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -293,7 +293,7 @@ public class TaskServiceImpl implements TaskService {
     public void autoFinish() {
 
         // The scan is based on tasks that have not been completed within 5 minutes of the current hour
-        LocalDateTime fromTaskTime = LocalDateTimeUtil.offset(LocalDateTime.now(), -1, ChronoUnit.HOURS);
+        LocalDateTime fromTaskTime = LocalDateTimeUtil.offset(LocalDateTime.now(), -10, ChronoUnit.MINUTES);
         log.info("The scanning range from: {}",LocalDateTimeUtil.formatNormal(fromTaskTime));
 
         List<Task> tasks = taskDao.condition(Task.builder()
@@ -347,18 +347,32 @@ public class TaskServiceImpl implements TaskService {
         Assert.isTrue(!task.getFinished(),()->new ServiceException("The task is finish"));
 
         try{
+            LocalDateTime next = null;
             // routine task
             if(task.getRoutine() && StrUtil.isNotBlank(task.getRoutineCron())){
                 CronExpression expression = CronExpression.parse(task.getRoutineCron());
-                LocalDateTime next = expression.next(task.getTaskTime().isAfter(LocalDateTime.now())?task.getTaskTime():LocalDateTime.now());
-                if(next == null){
-                    throw new ServiceException("The CRON expression fail");
-                }
+                LocalDateTime baseTime = task.getTaskTime().isAfter(LocalDateTime.now()) ? task.getTaskTime() : LocalDateTime.now();
+                try{
 
+                    next = expression.next(baseTime);
+                }catch (Exception e){
+                    log.error("Parse CRON expression fail");
+                }
+                if(next == null){
+                    log.warn("There is no next time ,cron:{}",task.getRoutineCron());
+                }else{
+                    // Daily tasks that exceed one 90 days are meaningless
+                    if(LocalDateTimeUtil.between(baseTime,next).toDays() > 90){
+                        log.warn("Daily tasks that exceed one hundred days are meaningless ,cron:{}",task.getRoutineCron());
+                        next = null;
+                    }
+                }
+            }
+
+            if(next != null){
                 // Set net time
                 task.setTaskTime(next);
                 this.calcRemindTime(task);
-
             }else{
                 task.setStatus(qo.getTaskStatus().getCode());
                 task.setActualCloseTime(LocalDateTime.now());
