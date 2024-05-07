@@ -44,7 +44,6 @@ public class PracticeServiceImpl implements PracticeService {
     @Override
     public Page<PractiseVO> todayList(PracticeQO qo) {
 
-
         // Get the not done, time greater than zero today, paging, reverse order, topicId
         Practice condition = Practice.builder().userId(qo.getUserId())
 //                .result(PractiseResult.UNDO)
@@ -74,11 +73,14 @@ public class PracticeServiceImpl implements PracticeService {
 
         Map<Long, List<Practice>> groupMap = practices.stream().collect(Collectors.groupingBy(Practice::getTopicId));
         for (PractiseVO vo : page.getDataList()) {
-
             TopicVO info = topicInfoMap.get(vo.getTopicId());
-            vo.setTitle(info.getTitle());
-            vo.setFullTitle(info.getFullTitle());
-            vo.setBackground(info.getBackground());
+            if(info != null){
+                vo.setTitle(info.getTitle());
+                vo.setFullTitle(info.getFullTitle());
+                vo.setBackground(info.getBackground());
+            }else{
+                vo.setTitle("UNKNOWN");
+            }
 
             List<Practice> practisesForTopic = groupMap.get(vo.getTopicId());
             if(CollUtil.isEmpty(practisesForTopic)){
@@ -166,6 +168,13 @@ public class PracticeServiceImpl implements PracticeService {
         // save
         condition.setPractiseDate(LocalDateTimeUtil.beginOfDay(LocalDateTimeUtil.offset(LocalDateTime.now(),qo.getIntervalDays(), ChronoUnit.DAYS)));
         practiceDao.save(condition);
+        return false;
+    }
+
+    @Override
+    public boolean deleteByPointId(Long pointId) {
+        // clear all
+        practiceDao.remove(Practice.builder().pointId(pointId).build());
         return false;
     }
 }

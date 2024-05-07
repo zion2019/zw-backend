@@ -1,11 +1,14 @@
 package com.zion.learning.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.zion.common.basic.BaseEntity;
 import com.zion.learning.common.DegreeOfMastery;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.Set;
 
 @Data
 @Builder
@@ -21,4 +24,9 @@ public class Point extends BaseEntity {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long topicId;
 
+    @JsonIgnore
+    private Set<String> titles;
+
+    @JsonIgnore
+    private Set<Long> topicIds;
 }
