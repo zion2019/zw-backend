@@ -11,6 +11,7 @@ import com.zion.learning.model.SubPoint;
 import com.zion.learning.model.Topic;
 import com.zion.learning.service.PointService;
 import com.zion.learning.service.TopicService;
+import lombok.Getter;
 
 import java.util.*;
 import java.util.function.Function;
@@ -18,38 +19,26 @@ import java.util.stream.Collectors;
 
 public class PointExcelImportListener implements ReadListener<PointExcelDto> {
 
-    private PointService pointService;
-    private TopicService topicService;
+    private final PointService pointService;
+    private final TopicService topicService;
 
     /**
      * parse Excel data
      */
     private List<PointExcelDto> excelParseDataList;
+    @Getter
     private List<PointExcelDto> excelErrorDataList;
 
+    @Getter
     private Set<Long> perRemovePointId ;
+    @Getter
     private List<Point> insertPoint ;
+    @Getter
     private List<SubPoint> insertSubPoint ;
 
     public PointExcelImportListener(PointService pointService,TopicService topicService) {
         this.pointService = pointService;
         this.topicService = topicService;
-    }
-
-    public List<PointExcelDto> getExcelErrorDataList() {
-        return excelErrorDataList;
-    }
-
-    public Set<Long> getPerRemovePointId() {
-        return perRemovePointId;
-    }
-
-    public List<Point> getInsertPoint() {
-        return insertPoint;
-    }
-
-    public List<SubPoint> getInsertSubPoint() {
-        return insertSubPoint;
     }
 
 
@@ -148,7 +137,7 @@ public class PointExcelImportListener implements ReadListener<PointExcelDto> {
             for (String pointTitle : pointTitleMap.keySet()) {
                 List<PointExcelDto> subPints = pointTitleMap.get(pointTitle);
                 boolean forceUpdate = subPints.stream().anyMatch(p -> "Y".equals(p.getForceUpdate()));
-                Point point = null;
+                Point point;
                 if(CollUtil.isNotEmpty(pointTitleIdMap)){
                     point = pointTitleIdMap.get(pointTitle);
                     if(point != null){
@@ -156,7 +145,6 @@ public class PointExcelImportListener implements ReadListener<PointExcelDto> {
                             continue;
                         }
                         perRemovePointId.add(point.getId());
-                        point = null;
                     }
                 }
 

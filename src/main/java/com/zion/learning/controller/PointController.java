@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -63,5 +64,20 @@ public class PointController extends BaseController {
             }
         }
         return R.ok();
+    }
+
+    @GetMapping("/export/template")
+    public void export(HttpServletResponse response){
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("utf-8");
+        // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
+        String fileName = null;
+        try {
+            fileName = URLEncoder.encode("PointImportTemplate", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
+            EasyExcel.write(response.getOutputStream(), PointExcelDto.class).sheet("error").doWrite(new ArrayList<>());
+        } catch (Exception e) {
+            throw new ServiceException(e.getMessage());
+        }
     }
 }
