@@ -333,7 +333,7 @@ public class TaskServiceImpl implements TaskService {
 
     private void calcRemindTime(Task task) {
         // 1. base task time to calc remind time
-        LocalDateTime remindTime = calcTaskTime(task.getRemindTimeType(), task.getRemindTimeNum(), task.getRemindTime());
+        LocalDateTime remindTime = calcTaskTime(task.getRemindTimeType(), task.getRemindTimeNum(), task.getTaskTime());
         task.setRemindTime(remindTime);
 
         // 2. remind if  more than three hours
