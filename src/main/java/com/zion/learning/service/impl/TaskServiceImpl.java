@@ -337,7 +337,7 @@ public class TaskServiceImpl implements TaskService {
         task.setRemindTime(remindTime);
 
         // 2. remind if  more than three hours
-        if(LocalDateTimeUtil.between(remindTime,LocalDateTime.now()).toHours() > 3){
+        if(LocalDateTimeUtil.between(LocalDateTime.now(),remindTime).toHours() > 3){
             task.setRemind(false);
         }
     }
