@@ -177,7 +177,7 @@ public class TaskServiceImpl implements TaskService {
         task.setStatus(TaskStatus.READING.getCode());
         task.setRoutineCron(qo.getRoutineCron());
         task.setTopicId(qo.getTopicId());
-        this.calcRemindTime(task);
+        this.calcRemindTime(task,task.getTaskTime());
         taskDao.save(task);
         // save operation
         this.saveOperation(task.getId(),userId, taskOperationType,null);
@@ -323,7 +323,7 @@ public class TaskServiceImpl implements TaskService {
         task.setTaskTime(calcTaskTime(delayQO.getDelayTimeType(),delayQO.getDelayTimeNum(),LocalDateTimeUtil.now()));
         task.setDelayCount(task.getDelayCount() == null ? 1 :task.getDelayCount()+1);
         task.setTaskTime(LocalDateTimeUtil.offset(task.getTaskTime(),task.getDelayCount(), ChronoUnit.HOURS));
-        this.calcRemindTime(task);
+        this.calcRemindTime(task,task.getTaskTime());
         taskDao.save(task);
         // save operation
         this.saveOperation(task.getId(),delayQO.getUserId(), TaskOperationType.DELAY,delayQO.getDelayReason());
@@ -331,9 +331,9 @@ public class TaskServiceImpl implements TaskService {
         return false;
     }
 
-    private void calcRemindTime(Task task) {
+    private void calcRemindTime(Task task,LocalDateTime baseTime) {
         // 1. base task time to calc remind time
-        LocalDateTime remindTime = calcTaskTime(task.getRemindTimeType(), task.getRemindTimeNum(), task.getRemindTime());
+        LocalDateTime remindTime = calcTaskTime(task.getRemindTimeType(), task.getRemindTimeNum(), baseTime);
 
         // 2. remind if  more than three hours
         if(LocalDateTimeUtil.between(remindTime,LocalDateTime.now()).toHours() > 3){
@@ -357,7 +357,7 @@ public class TaskServiceImpl implements TaskService {
 
                 // Set net time
                 task.setTaskTime(next);
-                this.calcRemindTime(task);
+                this.calcRemindTime(task,task.getTaskTime());
 
             }else{
                 task.setStatus(qo.getTaskStatus().getCode());
