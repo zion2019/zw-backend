@@ -7,6 +7,8 @@ import lombok.Data;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Set;
+
 @Data
 @Builder
 @Document(collection = "topics")
@@ -35,5 +37,9 @@ public class Topic  extends BaseEntity {
 
     @JsonIgnore
     private Long excludeId;
+
+
+    @JsonIgnore
+    private Set<String> topicCodes;
 
 }

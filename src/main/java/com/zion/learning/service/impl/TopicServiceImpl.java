@@ -205,6 +205,16 @@ public class TopicServiceImpl implements TopicService {
         return vos;
     }
 
+    @Override
+    public List<TopicVO> condition(Topic condition) {
+        List<Topic> topics = topicDao.condition(condition);
+        if(CollUtil.isEmpty(topics)){
+            return null;
+        }
+
+        return BeanUtil.copyToList(topics,TopicVO.class);
+    }
+
     /**
      * generate full title
      */

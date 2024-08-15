@@ -4,6 +4,9 @@ import com.zion.common.basic.Page;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
+import java.util.Set;
+
 @Builder
 @Data
 public class TopicQO extends Page {

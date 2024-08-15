@@ -4,6 +4,7 @@ import cn.hutool.core.lang.tree.Tree;
 import com.zion.common.basic.Page;
 import com.zion.common.vo.learning.request.TopicQO;
 import com.zion.common.vo.learning.response.TopicVO;
+import com.zion.learning.model.Topic;
 
 import java.util.List;
 
@@ -25,4 +26,9 @@ public interface TopicService {
      * find simple info for practise
      */
     List<TopicVO> getTitleByIds(List<Long> topics);
+
+    /**
+     * find topic vo with condition
+     */
+    List<TopicVO>  condition(Topic condition);
 }

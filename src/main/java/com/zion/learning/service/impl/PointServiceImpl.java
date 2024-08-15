@@ -3,31 +3,44 @@ package com.zion.learning.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import cn.hutool.core.util.StrUtil;
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.read.listener.ReadListener;
 import com.zion.common.basic.Page;
+import com.zion.common.basic.ServiceException;
+import com.zion.learning.service.excel.PointExcelDto;
 import com.zion.common.vo.learning.request.PointQO;
 import com.zion.common.vo.learning.request.PracticeQO;
 import com.zion.common.vo.learning.response.PointVo;
 import com.zion.common.vo.learning.response.SubPointVo;
 import com.zion.common.vo.learning.response.TopicStatisticVo;
+import com.zion.common.vo.learning.response.TopicVO;
 import com.zion.learning.common.DegreeOfMastery;
 import com.zion.learning.common.PractiseResult;
 import com.zion.learning.dao.PointDao;
 import com.zion.learning.dao.SubPointDao;
 import com.zion.learning.model.Point;
 import com.zion.learning.model.SubPoint;
+import com.zion.learning.model.Topic;
 import com.zion.learning.service.PointService;
 import com.zion.learning.service.PracticeService;
 import com.zion.learning.service.TopicService;
+import com.zion.learning.service.excel.PointExcelImportListener;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service
-public class PointServiceImpl implements PointService {
+public class PointServiceImpl implements PointService{
 
     @Resource
     private PointDao pointDao;
@@ -145,7 +158,51 @@ public class PointServiceImpl implements PointService {
         build.setId(pointId);
         pointDao.delete(build);
         subPointDao.delete(SubPoint.builder().pointId(pointId).build());
-
+        practiceService.deleteByPointId(pointId);
         return true;
+    }
+
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<PointExcelDto> importByExcel(MultipartFile file,Long userId) {
+        PointExcelImportListener listener = new PointExcelImportListener(this,topicService);
+        try{
+            EasyExcel.read(file.getInputStream()
+                    , PointExcelDto.class
+                    , listener).doReadAll();
+        }catch (Exception e){
+            throw new ServiceException(e.getMessage());
+        }
+
+        if(CollUtil.isNotEmpty(listener.getPerRemovePointId())){
+            listener.getPerRemovePointId().forEach(this::delete);
+        }
+
+        if(CollUtil.isNotEmpty(listener.getInsertPoint())){
+            listener.getInsertPoint().forEach(point -> {
+                pointDao.save(point);
+                practiceService.saveNext(PracticeQO.builder().topicId(point.getTopicId())
+                        .pointId(point.getId())
+                        .userId(userId)
+                        .intervalDays(DegreeOfMastery.UNDERSTAND.getIntervalDay())
+                        .build());
+            });
+        }
+
+        if(CollUtil.isNotEmpty(listener.getInsertSubPoint())){
+            listener.getInsertSubPoint().forEach(subPoint -> {
+                subPoint.setPointId(subPoint.getPoint().getId());
+                subPointDao.save(subPoint);
+            });
+        }
+
+        return listener.getExcelErrorDataList();
+
+    }
+
+    @Override
+    public List<Point> condition(Point pointCondition) {
+        return pointDao.condition(pointCondition);
     }
 }

@@ -13,4 +13,6 @@ public interface PracticeService {
     PractiseVO nextPoint(PracticeQO qo);
 
     boolean saveNext(PracticeQO qo);
+
+    boolean deleteByPointId(Long pointId);
 }

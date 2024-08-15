@@ -1,5 +1,6 @@
 package com.zion.learning.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.zion.common.basic.BaseEntity;
 import lombok.Builder;
 import lombok.Data;
@@ -17,5 +18,8 @@ public class SubPoint extends BaseEntity {
     private String title;
 
     private String detailContent;
+
+    @JsonIgnore
+    private Point point;
 
 }

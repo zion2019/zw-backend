@@ -4,9 +4,16 @@ import com.zion.common.basic.Page;
 import com.zion.common.vo.learning.response.PointVo;
 import com.zion.common.vo.learning.response.TopicStatisticVo;
 import com.zion.common.vo.learning.request.PointQO;
+import com.zion.common.vo.learning.response.TopicVO;
 import com.zion.learning.common.PractiseResult;
+import com.zion.learning.model.Point;
+import com.zion.learning.model.Topic;
+import com.zion.learning.service.excel.PointExcelDto;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 
 
 public interface PointService {
@@ -40,8 +47,18 @@ public interface PointService {
 
     /**
      * judge the topic id is have point
-     * @param topicId
-     * @return
+     * @param topicId topicId
      */
     boolean existPointByTopicId(Long topicId);
+
+    /**
+     * import Point with Excel
+     * @param file excel
+     */
+    List<PointExcelDto> importByExcel(MultipartFile file,Long userId);
+
+    /**
+     * condition list
+     */
+    List<Point> condition(Point pointCondition);
 }
