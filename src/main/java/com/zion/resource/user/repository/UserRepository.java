@@ -60,6 +60,12 @@ public class UserRepository implements UserDao {
             query.addCriteria(Criteria.where("loginName").is(userQO.getLoginName()));
         }
 
+        // 根据UserQO对象中的条件设置查询条件
+        if (userQO.getId() != null) {
+            query.addCriteria(Criteria.where("id").is(userQO.getId()));
+        }
+
+
         // 执行查询并返回符合条件的用户列表
         List<User> users = mongoTemplate.find(query, User.class);
         if(!CollUtil.isEmpty(users)){

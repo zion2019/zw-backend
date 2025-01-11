@@ -163,6 +163,7 @@ public class TaskServiceImpl implements TaskService {
         }else{
             task = Task.builder()
                     .userId(userId)
+                    .remind(false)
                     .delayCount(0)
                     .finished(false)
                     .build();

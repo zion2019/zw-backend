@@ -16,6 +16,7 @@ public class User extends BaseEntity  {
     private String avatar;
     private String password;
     private String email;
+    private String pushPlusId;
 
 
 }
