@@ -1,7 +1,6 @@
 package com.zion.learning.repository.mongo;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.StrUtil;
 import com.mongodb.client.result.UpdateResult;
 import com.zion.common.basic.BaseEntity;
 import com.zion.common.basic.CommonConstant;
@@ -54,7 +53,7 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
         return query;
     }
 
-    abstract Query generateQuery(M condition);
+    public abstract Query generateQuery(M condition);
 
     @Override
     public M getById(Long id) {
@@ -106,7 +105,13 @@ public abstract class ZWMongoBasicRep<M extends BaseEntity> implements ZWDao<M> 
         }
 
         // Create a Pageable object for pagination
-        Pageable pageable = PageRequest.of(page.getPageNo()<= 0?page.getPageNo():page.getPageNo()-1, page.getPageSize());
+        Pageable pageable = null;
+        if (page.getPageSize() == -1) {
+            // 全量查询时不使用分页
+            pageable = PageRequest.of(0, Integer.MAX_VALUE); // 使用一个极大值模拟全量查询
+        } else {
+            pageable = PageRequest.of(page.getPageNo() <= 0 ? page.getPageNo() : page.getPageNo() - 1, page.getPageSize());
+        }
         query.with(pageable);
 
         // query

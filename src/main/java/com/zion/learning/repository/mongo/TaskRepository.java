@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 public class TaskRepository  extends ZWMongoBasicRep<Task> implements TaskDao {
 
     @Override
-    Query generateQuery(Task condition) {
+    public Query generateQuery(Task condition) {
         Query query = new Query();
         if(condition.getUserId() != null){
             query.addCriteria(Criteria.where("userId").is(condition.getUserId()));

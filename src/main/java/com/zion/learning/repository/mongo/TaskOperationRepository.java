@@ -1,8 +1,6 @@
 package com.zion.learning.repository.mongo;
 
-import com.zion.learning.dao.TaskDao;
 import com.zion.learning.dao.TaskOperationDao;
-import com.zion.learning.model.Task;
 import com.zion.learning.model.TaskOperation;
 import lombok.AllArgsConstructor;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -14,7 +12,7 @@ import org.springframework.stereotype.Repository;
 public class TaskOperationRepository extends ZWMongoBasicRep<TaskOperation> implements TaskOperationDao {
 
     @Override
-    Query generateQuery(TaskOperation condition) {
+    public Query generateQuery(TaskOperation condition) {
         Query query = new Query();
         if(condition.getUserId() != null){
             query.addCriteria(Criteria.where("userId").is(condition.getUserId()));

@@ -25,6 +25,12 @@ public class BillCategory extends BaseEntity {
 
     private Integer level;
 
+    /**
+     * 分类类型
+     * com.zion.bill.constans.CategoryType
+     */
+    private Integer categoryType;
+
     private String fullPath;
 
     private String fullParentName;
@@ -36,6 +42,9 @@ public class BillCategory extends BaseEntity {
 
     @JsonIgnore
     private Long excludeId;
+
+    @JsonIgnore
+    private Long parentIdLike;
 
 
     @JsonIgnore

@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class PointRepository extends ZWMongoBasicRep<Point> implements PointDao {
 
     @Override
-    Query generateQuery(Point condition) {
+    public Query generateQuery(Point condition) {
         Query query = new Query();
         if(CharSequenceUtil.isNotBlank(condition.getTitle())){
             Pattern pattern = Pattern.compile(condition.getTitle(), Pattern.CASE_INSENSITIVE);

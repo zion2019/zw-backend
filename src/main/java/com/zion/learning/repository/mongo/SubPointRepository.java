@@ -40,7 +40,7 @@ public class SubPointRepository extends ZWMongoBasicRep<SubPoint> implements Sub
     }
 
     @Override
-    Query generateQuery(SubPoint condition) {
+    public Query generateQuery(SubPoint condition) {
         Query query = new Query();
 
         if(condition.getPointId() != null){
