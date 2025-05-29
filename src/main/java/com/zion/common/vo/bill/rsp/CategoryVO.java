@@ -48,4 +48,14 @@ public class CategoryVO implements Serializable {
      * 全ID路径
      */
     private String fullPath;
+
+    /**
+     * 全路径名称
+     */
+    private String fullParentName;
+
+    /**
+     * userId
+     */
+    private Long userId;
 }

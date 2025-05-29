@@ -56,6 +56,7 @@ public class SpringSecurityConfig {
     private static final String[] ignoreUriArray = new String[]{
             "/res/user/token",
             "/res/user/register",
+            "/bill/test",
             "/res/file/upload",
             "/learn/point/export/template"
     };

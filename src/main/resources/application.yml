@@ -26,6 +26,17 @@ spring:
       password: 'root'
   main:
     allow-circular-references: true
+
+  mail:
+    host: smtp.example.com        # 邮箱SMTP服务器地址（如：smtp.163.com）
+    port: 587                     # SMTP端口（通常为465或587）
+    username: your-email@example.com  # 发送方邮箱账号
+    password: your-email-password     # 授权码（不是登录密码！）
+    protocol: smtp                # 协议
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
 server:
   port: 9302
 

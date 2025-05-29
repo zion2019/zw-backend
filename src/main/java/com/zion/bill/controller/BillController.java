@@ -37,5 +37,11 @@ public class BillController extends BaseController {
         return R.ok(billService.recentlyCategory(count,getCurrentUserId()));
     }
 
+    @GetMapping("/test")
+    public R test(){
+        billService.sendBillEmail();
+        return R.ok();
+    }
+
 
 }

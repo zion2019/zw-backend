@@ -23,4 +23,6 @@ public interface BillService {
     List<CategoryVO> recentlyCategory(Integer count, Long currentUserId);
 
     long conditionCount(BillQO qo);
+
+    void sendBillEmail();
 }

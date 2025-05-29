@@ -17,6 +17,8 @@ public class UserVO implements UserDetails {
 
     private String password;
 
+    private String email;
+
     private String avatar;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;

@@ -17,7 +17,9 @@ import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
 import com.zion.common.vo.bill.req.CategoryQO;
 import com.zion.common.vo.bill.req.BillQO;
+import com.zion.common.vo.bill.rsp.BillsExcelVO;
 import com.zion.common.vo.bill.rsp.BillsVO;
+import com.zion.common.vo.bill.rsp.CategoryExcelVO;
 import com.zion.common.vo.bill.rsp.CategoryVO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -275,6 +277,43 @@ public class BillCategoryServiceImpl implements BillCategoryService {
             }
         });
         return page;
+    }
+
+    @Override
+    public List<BillCategory> condition(BillCategory build) {
+        return billCategoryDao.condition(build);
+    }
+
+    @Override
+    public List<CategoryExcelVO> covertCategoryExcelVo(List<BillCategory> userCategories) {
+        List<CategoryExcelVO> vos = new ArrayList<>();
+        for (BillCategory category : userCategories) {
+            CategoryExcelVO vo = new CategoryExcelVO();
+            if(category.getId() != null){
+                vo.setId(String.valueOf(category.getId()));
+            }
+            vo.setCreatedTime(category.getCreatedTime());
+            vo.setCreatedUser(category.getCreatedUser());
+            vo.setUpdatedTime(category.getUpdatedTime());
+            vo.setUpdatedUser(category.getUpdatedUser());
+            vo.setVersion(category.getVersion());
+            vo.setDeleted(category.getDeleted());
+            if(category.getUserId() != null){
+                vo.setUserId(String.valueOf(category.getUserId()));
+            }
+            vo.setTitle(category.getTitle());
+            vo.setCode(category.getCode());
+            vo.setColor(category.getColor());
+            if (category.getParentId() != null){
+                vo.setParentId(String.valueOf(category.getParentId()));
+            }
+            vo.setLevel(category.getLevel());
+            vo.setCategoryType(category.getCategoryType());
+            vo.setFullPath(category.getFullPath());
+            vo.setFullParentName(category.getFullParentName());
+            vos.add(vo);
+        }
+        return vos;
     }
 
 

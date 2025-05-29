@@ -1,10 +1,12 @@
 package com.zion.bill.service;
 
 import cn.hutool.core.lang.tree.Tree;
+import com.zion.bill.model.BillCategory;
 import com.zion.common.basic.Page;
 import com.zion.common.vo.bill.req.BillQO;
 import com.zion.common.vo.bill.req.CategoryQO;
 import com.zion.common.vo.bill.rsp.BillsVO;
+import com.zion.common.vo.bill.rsp.CategoryExcelVO;
 import com.zion.common.vo.bill.rsp.CategoryVO;
 
 import java.io.Serializable;
@@ -54,4 +56,13 @@ public interface BillCategoryService {
      * @return 账单列表
      */
     Page<BillsVO> billsPage(CategoryQO qo);
+
+    List<BillCategory> condition(BillCategory build);
+
+    /**
+     * entity to  excel vo
+     * @param userCategories
+     * @return
+     */
+    List<CategoryExcelVO> covertCategoryExcelVo(List<BillCategory> userCategories);
 }
