@@ -274,6 +274,7 @@ public class BillCategoryServiceImpl implements BillCategoryService {
             }else{
                 billsVO.setCategoryDesc(categoryVO.getTitle());
                 billsVO.setCategoryColor(categoryVO.getColor());
+                billsVO.setCategoryType(categoryVO.getCategoryType());
             }
         });
         return page;
@@ -336,7 +337,6 @@ public class BillCategoryServiceImpl implements BillCategoryService {
 
         // 获取当前分类下的所有子分类，逻辑是：获取当前分类code， like bill_category.fullPath  所有 code%
         BillCategory condition = BillCategory.builder().parentIdLike(parentCategory.getId()).build();
-        condition.include("id","fullPath","title","color");
         List<BillCategory> childrenCategories = billCategoryDao.condition(condition);
         if(CollUtil.isNotEmpty(childrenCategories)){
             categories.addAll(BeanUtil.copyToList(childrenCategories, CategoryVO.class));

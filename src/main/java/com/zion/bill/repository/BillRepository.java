@@ -9,6 +9,7 @@ import com.zion.bill.model.BillCategory;
 import com.zion.bill.model.Bills;
 import com.zion.learning.repository.mongo.ZWMongoBasicRep;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
@@ -46,6 +47,10 @@ public class BillRepository extends ZWMongoBasicRep<Bills> implements BillDao {
 
         if(CollUtil.isNotEmpty(condition.getQueryCategoryIdList())){
             query.addCriteria(Criteria.where("categoryId").in(condition.getQueryCategoryIdList()));
+        }
+
+        if(CharSequenceUtil.isNotBlank(condition.getSortFiledName())){
+            query.with(Sort.by(condition.getSortDirection(),condition.getSortFiledName()));
         }
 
         return query;

@@ -19,6 +19,7 @@ public class BillsVO implements Serializable {
 
     private String categoryDesc;
     private String categoryColor;
+    private Integer categoryType;
 
 
     private String billDate;

@@ -27,6 +27,7 @@ import jakarta.annotation.Resource;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -202,6 +203,7 @@ public class BillServiceImpl implements BillService {
         if(qo.getCategoryId() != null){
             condition.setCategoryId(qo.getCategoryId());
         }
+        condition.sort("createdTime", Sort.Direction.DESC);
 
         Page<Bills> pageRsp = billDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), Bills.class, condition);
         return pageRsp;
