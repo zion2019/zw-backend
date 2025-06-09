@@ -187,6 +187,9 @@ public class BillCategoryServiceImpl implements BillCategoryService {
 
     @Override
     public List<CategoryVO> list(CategoryQO qo) {
+        List<CategoryVO> categoryVOS = new ArrayList<>();
+
+        // 构造基础查询条件
         BillCategory condition = BillCategory.builder().userId(qo.getUserId()).build();
         if(CharSequenceUtil.isNotBlank(qo.getTitle())){
             condition.setTitle(qo.getTitle());
@@ -195,28 +198,33 @@ public class BillCategoryServiceImpl implements BillCategoryService {
             condition.setParentId(qo.getParentId());
         }
         Page<BillCategory> pageRsp = billCategoryDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), BillCategory.class, condition);
-        if(CollUtil.isEmpty(pageRsp.getDataList())){
-            return List.of();
+        List<BillCategory> justQueryCategories = pageRsp.getDataList();
+        if(CollUtil.isNotEmpty(justQueryCategories)){
+            categoryVOS = BeanUtil.copyToList(justQueryCategories, CategoryVO.class);
         }
-        List<CategoryVO> categoryVOS = BeanUtil.copyToList(pageRsp.getDataList(), CategoryVO.class);
+
+        // 如无需统计分类下消费账单，则直接返回
+        if(qo.getStats() == null || !qo.getStats()){
+            return categoryVOS;
+        }
 
         // 统计所有消费账单
-        if(qo.getStats() != null && qo.getStats()){
-            // 获取当前指定id下的所有子级ID
-            List<CategoryVO> allCategoryVoList = listCategoryAndChildren(qo.getParentId());
-            if(CollUtil.isEmpty(allCategoryVoList)){
-                return categoryVOS;
-            }
+        // 获取当前指定id下的所有子级ID
+        List<CategoryVO> allCategoryVoList = listCategoryAndChildren(qo.getParentId());
+        if(CollUtil.isEmpty(allCategoryVoList)){
+            return categoryVOS;
+        }
 
-            // 查询所有相关账单
-            BillQO billQO = new BillQO();
-            billQO.setUserId(qo.getUserId());
-            billQO.setCategoryIdList(allCategoryVoList.stream().map(CategoryVO::getId).toList());
-            billQO.setStartDay(qo.getStatsBillSTime());
-            billQO.setEndDay(qo.getStatsBillETime());
-            List<BillsVO> billsVOS = billService.list(billQO);
+        // 查询所有相关账单
+        BillQO billQO = new BillQO();
+        billQO.setUserId(qo.getUserId());
+        billQO.setCategoryIdList(allCategoryVoList.stream().map(CategoryVO::getId).toList());
+        billQO.setStartDay(qo.getStatsBillSTime());
+        billQO.setEndDay(qo.getStatsBillETime());
+        List<BillsVO> billsVOS = billService.list(billQO);
 
-            // 统计当前查询结果下的账单金额
+        // 统计当前查询结果下的账单金额
+        if(CollUtil.isNotEmpty(categoryVOS)){
             for (CategoryVO categoryVO : categoryVOS) {
                 Long id = categoryVO.getId();
                 // 获取当前分类下所有子类，包含当前分类
@@ -225,20 +233,21 @@ public class BillCategoryServiceImpl implements BillCategoryService {
                         .map(BillsVO::getAmount)
                         .reduce(BigDecimal.ZERO,  BigDecimal::add));
             }
+        }
 
-            // 挂在当前父级下的账单
-            if(qo.getParentId() != 0L){
-                List<CategoryVO> list = allCategoryVoList.stream().filter(c -> c.getId().equals(qo.getParentId())).toList();
-                if(CollUtil.isNotEmpty(list)){
-                    CategoryVO parentCategory = list.get(0);
-                    parentCategory.setBillAmount(billsVOS.stream()
-                            .filter(b -> parentCategory.getId().equals(b.getCategoryId()))
-                            .map(BillsVO::getAmount)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add));
-                    categoryVOS.add(parentCategory);
-                }
+        // 挂在当前父级下的账单
+        if(qo.getParentId() != 0L){
+            List<CategoryVO> list = allCategoryVoList.stream().filter(c -> c.getId().equals(qo.getParentId())).toList();
+            if(CollUtil.isNotEmpty(list)){
+                CategoryVO parentCategory = list.get(0);
+                parentCategory.setBillAmount(billsVOS.stream()
+                        .filter(b -> parentCategory.getId().equals(b.getCategoryId()))
+                        .map(BillsVO::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+                categoryVOS.add(parentCategory);
             }
         }
+
 
         return categoryVOS;
     }
@@ -259,6 +268,8 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         billQO.setCategoryIdList(allCategoryVoList.stream().map(CategoryVO::getId).toList());
         billQO.setStartDay(qo.getStatsBillSTime());
         billQO.setEndDay(qo.getStatsBillETime());
+        billQO.setPageNo( qo.getPageNo());
+        billQO.setPageSize( qo.getPageSize());
         Page<BillsVO> page = billService.page(billQO);
         if(page == null || CollUtil.isEmpty(page.getDataList())){
             return page;
