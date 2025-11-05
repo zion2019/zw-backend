@@ -11,15 +11,13 @@ import com.zion.bill.dao.BillDao;
 import com.zion.bill.model.BillCategory;
 import com.zion.bill.model.Bills;
 import com.zion.bill.service.BillCategoryService;
+import com.zion.bill.service.BillChannelService;
 import com.zion.bill.service.BillService;
 import com.zion.common.basic.Page;
 import com.zion.common.utils.BillDateUtil;
 import com.zion.common.vo.bill.req.BillQO;
 import com.zion.common.vo.bill.req.CategoryQO;
-import com.zion.common.vo.bill.rsp.BillsExcelVO;
-import com.zion.common.vo.bill.rsp.BillsVO;
-import com.zion.common.vo.bill.rsp.CategoryExcelVO;
-import com.zion.common.vo.bill.rsp.CategoryVO;
+import com.zion.common.vo.bill.rsp.*;
 import com.zion.common.vo.resource.request.UserQO;
 import com.zion.common.vo.resource.response.UserVO;
 import com.zion.resource.user.service.UserService;
@@ -60,6 +58,9 @@ public class BillServiceImpl implements BillService {
     @Resource
     private JavaMailSender javaMailSender;
 
+    @Resource
+    private BillChannelService channelService;
+
     @Value("${spring.mail.username:none}")
     private String configMailUserName;
 
@@ -76,6 +77,7 @@ public class BillServiceImpl implements BillService {
         }
         bill.setAmount(qo.getAmount());
         bill.setCategoryId(qo.getCategoryId());
+        bill.setChannelId(qo.getChannelId());
         bill.setRemark(qo.getRemark());
         bill.setLocation(qo.getLocation());
         bill.setUserId(qo.getUserId());
@@ -95,6 +97,7 @@ public class BillServiceImpl implements BillService {
             BillsVO billsVO = new BillsVO();
             billsVO.setAmount(bill.getAmount());
             billsVO.setCategoryId(bill.getCategoryId());
+            billsVO.setChannelId(bill.getChannelId());
             billsVO.setId(bill.getId());
             return billsVO;
         }).toList();
@@ -117,6 +120,7 @@ public class BillServiceImpl implements BillService {
             BillsVO billsVO = new BillsVO();
             billsVO.setAmount(bill.getAmount());
             billsVO.setCategoryId(bill.getCategoryId());
+            billsVO.setChannelId(bill.getChannelId());
             billsVO.setId(bill.getId());
             billsVO.setBillDate(LocalDateTimeUtil.format(bill.getCreatedTime(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
             billsVO.setBillRemark(bill.getRemark());
@@ -137,6 +141,7 @@ public class BillServiceImpl implements BillService {
         BillsVO billsVO = new BillsVO();
         billsVO.setAmount(bill.getAmount());
         billsVO.setCategoryId(bill.getCategoryId());
+        billsVO.setChannelId(bill.getChannelId());
         billsVO.setId(bill.getId());
         billsVO.setLocation(bill.getLocation());
         billsVO.setBillRemark(bill.getRemark());
@@ -149,7 +154,8 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public List<CategoryVO> recentlyCategory(Integer count, Long currentUserId) {
+    public BillRecentInfoVO recentlyInfo(Integer count, Long currentUserId) {
+        BillRecentInfoVO recentInfoVO = new BillRecentInfoVO();
         // 查询用户的最近1000条账单记录
         BillQO billQO = new BillQO();
         billQO.setUserId(currentUserId);
@@ -157,33 +163,48 @@ public class BillServiceImpl implements BillService {
 
         Page<Bills> billsPage = pageBillEntities(billQO);
         if (CollUtil.isEmpty(billsPage.getDataList())) {
-            return List.of();
+            return recentInfoVO;
         }
 
         // 按照 categoryId 分组并统计出现次数
         Map<Long, Long> categoryCountMap = billsPage.getDataList().stream()
                 .filter(bill -> bill.getCategoryId() != null)
                 .collect(Collectors.groupingBy(Bills::getCategoryId, Collectors.counting()));
+        if (CollUtil.isNotEmpty(categoryCountMap)) {
+            // 获取前 count 个消费次数最多的分类ID
+            List<Long> topCategoryIds = categoryCountMap.entrySet().stream()
+                    .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
+                    .limit(count)
+                    .map(Map.Entry::getKey)
+                    .toList();
 
-        if (categoryCountMap.isEmpty()) {
-            return List.of();
+            List<CategoryVO> categoryVOS = new ArrayList<>();
+            for (Long topCategoryId : topCategoryIds) {
+                CategoryVO categoryVO = categoryService.info(topCategoryId, currentUserId);
+                categoryVOS.add(categoryVO);
+            }
+            recentInfoVO.setCategories(categoryVOS);
         }
 
-        // 获取前 count 个消费次数最多的分类ID
-        List<Long> topCategoryIds = categoryCountMap.entrySet().stream()
+        List<Long> topChannelIds = billsPage.getDataList().stream()
+                .filter(bill -> bill.getChannelId() != null)
+                .collect(Collectors.groupingBy(Bills::getChannelId, Collectors.counting()))
+                .entrySet().stream()
                 .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
                 .limit(count)
                 .map(Map.Entry::getKey)
                 .toList();
-
-        List<CategoryVO> categoryVOS = new ArrayList<>();
-        for (Long topCategoryId : topCategoryIds) {
-            CategoryVO categoryVO = categoryService.info(topCategoryId, currentUserId);
-            categoryVOS.add(categoryVO);
+        if(CollUtil.isNotEmpty(topChannelIds)){
+            List<ChannelVO> channelVOS = new ArrayList<>();
+            for (Long topChannelId : topChannelIds) {
+                ChannelVO channelVO = channelService.info(topChannelId, currentUserId);
+                channelVOS.add(channelVO);
+            }
+            recentInfoVO.setChannels(channelVOS);
         }
-
-        return categoryVOS;
+        return recentInfoVO;
     }
+
 
     @Override
     public long conditionCount(BillQO qo) {
@@ -202,6 +223,14 @@ public class BillServiceImpl implements BillService {
         condition.setQueryCategoryIdList(qo.getCategoryIdList());
         if(qo.getCategoryId() != null){
             condition.setCategoryId(qo.getCategoryId());
+        }
+
+        if(qo.getChannelId() != null){
+            condition.setChannelId(qo.getChannelId());
+        }
+
+        if(qo.getChannelId() != null){
+            condition.setChannelId(qo.getChannelId());
         }
         condition.sort("createdTime", Sort.Direction.DESC);
 

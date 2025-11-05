@@ -33,6 +33,14 @@ public class BillRepository extends ZWMongoBasicRep<Bills> implements BillDao {
             query.addCriteria(Criteria.where("categoryId").is(condition.getCategoryId()));
         }
 
+        if(condition.getChannelId() != null){
+            query.addCriteria(Criteria.where("channelId").is(condition.getChannelId()));
+        }
+
+        if(condition.getChannelId() != null){
+            query.addCriteria(Criteria.where("channelId").is(condition.getChannelId()));
+        }
+
         if(CollUtil.isNotEmpty(condition.getIds())){
             query.addCriteria(Criteria.where("id").in(condition.getIds()));
         }

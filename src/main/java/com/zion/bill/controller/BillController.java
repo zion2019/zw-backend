@@ -32,9 +32,9 @@ public class BillController extends BaseController {
      * 最近高频使用的标签
      * @param count 标签数量
      */
-    @GetMapping("/category/recently")
-    public R recentlyCategory(@RequestParam("count")Integer count){
-        return R.ok(billService.recentlyCategory(count,getCurrentUserId()));
+    @GetMapping("/recently/info")
+    public R recentlyInfo(@RequestParam("count")Integer count){
+        return R.ok(billService.recentlyInfo(count,getCurrentUserId()));
     }
 
 }

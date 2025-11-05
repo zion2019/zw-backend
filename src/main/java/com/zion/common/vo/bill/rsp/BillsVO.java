@@ -15,6 +15,9 @@ public class BillsVO implements Serializable {
     private Long categoryId;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long channelId;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     private String categoryDesc;

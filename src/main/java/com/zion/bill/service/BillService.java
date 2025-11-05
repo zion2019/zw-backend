@@ -5,6 +5,7 @@ import com.zion.common.basic.Page;
 import com.zion.common.vo.bill.req.BillChartQO;
 import com.zion.common.vo.bill.req.BillQO;
 import com.zion.common.vo.bill.rsp.BillChartVO;
+import com.zion.common.vo.bill.rsp.BillRecentInfoVO;
 import com.zion.common.vo.bill.rsp.BillsVO;
 import com.zion.common.vo.bill.rsp.CategoryVO;
 
@@ -20,7 +21,7 @@ public interface BillService {
 
     BillsVO info(Long id,Long userId);
 
-    List<CategoryVO> recentlyCategory(Integer count, Long currentUserId);
+    BillRecentInfoVO recentlyInfo(Integer count, Long currentUserId);
 
     long conditionCount(BillQO qo);
 

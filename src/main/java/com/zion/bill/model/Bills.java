@@ -20,6 +20,8 @@ public class Bills extends BaseEntity {
 
     private Long categoryId;
 
+    private Long channelId;
+
     private String remark;
 
     private String location;
