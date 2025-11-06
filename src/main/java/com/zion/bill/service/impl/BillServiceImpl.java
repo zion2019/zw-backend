@@ -17,6 +17,7 @@ import com.zion.common.basic.Page;
 import com.zion.common.utils.BillDateUtil;
 import com.zion.common.vo.bill.req.BillQO;
 import com.zion.common.vo.bill.req.CategoryQO;
+import com.zion.common.vo.bill.req.ChannelQO;
 import com.zion.common.vo.bill.rsp.*;
 import com.zion.common.vo.resource.request.UserQO;
 import com.zion.common.vo.resource.response.UserVO;
@@ -77,7 +78,18 @@ public class BillServiceImpl implements BillService {
         }
         bill.setAmount(qo.getAmount());
         bill.setCategoryId(qo.getCategoryId());
-        bill.setChannelId(qo.getChannelId());
+
+        // 没有的渠道ID，新增渠道
+        if(qo.getChannelId() == null && CharSequenceUtil.isNotBlank(qo.getChannelName())){
+            ChannelQO saveChannelQo = new ChannelQO();
+            saveChannelQo.setName(qo.getChannelName());
+            saveChannelQo.setUserId(qo.getUserId());
+            Long save = channelService.save(saveChannelQo);
+            bill.setChannelId(save);
+        }else{
+            bill.setChannelId(qo.getChannelId());
+        }
+
         bill.setRemark(qo.getRemark());
         bill.setLocation(qo.getLocation());
         bill.setUserId(qo.getUserId());

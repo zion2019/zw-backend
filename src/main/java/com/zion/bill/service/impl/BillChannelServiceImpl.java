@@ -25,7 +25,7 @@ public class BillChannelServiceImpl implements BillChannelService {
     private BillChannelDao billChannelDao;
 
     @Override
-    public void save(ChannelQO qo) {
+    public Long save(ChannelQO qo) {
         Assert.isTrue(qo.getUserId() != null, "userId is required");
         Assert.isTrue(qo.getName() != null && !qo.getName().trim().isEmpty(), "name is required");
         
@@ -43,6 +43,8 @@ public class BillChannelServiceImpl implements BillChannelService {
         channel.setUserId(qo.getUserId());
         
         billChannelDao.save(channel);
+
+        return channel.getId();
     }
 
     @Override

@@ -20,6 +20,8 @@ public class BillQO extends Page implements Serializable{
 
     private Long channelId;
 
+    private String channelName;
+
     private String remark;
 
     private String location;
