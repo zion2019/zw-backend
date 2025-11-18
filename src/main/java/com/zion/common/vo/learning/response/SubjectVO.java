@@ -28,7 +28,7 @@ public class SubjectVO implements Serializable {
     /**
      * 已延期天数
      */
-    private Integer delayDays;
+    private Long delayDays;
 
 
 }
