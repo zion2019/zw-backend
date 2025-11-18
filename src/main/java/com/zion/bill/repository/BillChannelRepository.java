@@ -3,7 +3,8 @@ package com.zion.bill.repository;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.zion.bill.dao.BillChannelDao;
 import com.zion.bill.model.BillChannel;
-import com.zion.learning.repository.mongo.ZWMongoBasicRep;
+import com.zion.common.basic.BaseDaoQueryCondition;
+import com.zion.common.basic.ZWMongoBasicRep;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -14,7 +15,7 @@ import java.util.regex.Pattern;
 
 @AllArgsConstructor
 @Repository
-public class BillChannelRepository extends ZWMongoBasicRep<BillChannel> implements BillChannelDao {
+public class BillChannelRepository extends ZWMongoBasicRep<BillChannel, BaseDaoQueryCondition> implements BillChannelDao {
 
     @Override
     public Query generateQuery(BillChannel condition) {

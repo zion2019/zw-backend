@@ -2,23 +2,19 @@ package com.zion.bill.repository;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import cn.hutool.core.util.StrUtil;
-import com.zion.bill.dao.BillCategoryDao;
 import com.zion.bill.dao.BillDao;
-import com.zion.bill.model.BillCategory;
 import com.zion.bill.model.Bills;
-import com.zion.learning.repository.mongo.ZWMongoBasicRep;
+import com.zion.common.basic.BaseDaoQueryCondition;
+import com.zion.common.basic.ZWMongoBasicRep;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.regex.Pattern;
-
 @AllArgsConstructor
 @Repository
-public class BillRepository extends ZWMongoBasicRep<Bills> implements BillDao {
+public class BillRepository extends ZWMongoBasicRep<Bills, BaseDaoQueryCondition> implements BillDao {
 
 
     @Override
