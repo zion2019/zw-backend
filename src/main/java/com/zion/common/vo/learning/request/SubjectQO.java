@@ -3,12 +3,19 @@ package com.zion.common.vo.learning.request;
 import com.zion.common.basic.Page;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class SubjectQO extends Page {
     private Long id;
     private String title;
     private Long tagId;
     private Long userId;
+
+    /**
+     * by id query
+     */
+    private List<Long> subjectIds;
 
     /**
      * 阶段数

@@ -1,8 +1,7 @@
 package com.zion.bill.dao;
 
 import com.zion.bill.model.BillChannel;
-import com.zion.common.basic.BaseDaoQueryCondition;
-import com.zion.common.basic.ZWDao;
+import com.zion.common.db.ZDao;
 
-public interface BillChannelDao extends ZWDao<BillChannel, BaseDaoQueryCondition> {
+public interface BillChannelDao extends ZDao<BillChannel> {
 }

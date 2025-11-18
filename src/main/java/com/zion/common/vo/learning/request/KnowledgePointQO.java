@@ -16,6 +16,9 @@ public class KnowledgePointQO extends Page {
     private Long userId;
     private Long strategyId;
     private Integer breakdownCount;
-    private MasteryLevel masteryLevel;
     private LocalDateTime nextReviewTime;
+    /**
+     * 复习时间大于等于
+     */
+    private LocalDateTime geNextReviewTime;
 }

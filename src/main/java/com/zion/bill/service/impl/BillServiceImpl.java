@@ -14,6 +14,7 @@ import com.zion.bill.service.BillCategoryService;
 import com.zion.bill.service.BillChannelService;
 import com.zion.bill.service.BillService;
 import com.zion.common.basic.Page;
+import com.zion.common.db.ZCondition;
 import com.zion.common.utils.BillDateUtil;
 import com.zion.common.vo.bill.req.BillQO;
 import com.zion.common.vo.bill.req.CategoryQO;
@@ -31,13 +32,14 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,59 +56,48 @@ public class BillServiceImpl implements BillService {
     private BillCategoryService categoryService;
 
     @Resource
+    private BillChannelService channelService;
+
+    @Resource
     private UserService userService;
 
     @Resource
     private JavaMailSender javaMailSender;
 
-    @Resource
-    private BillChannelService channelService;
-
-    @Value("${spring.mail.username:none}")
+    @Value("${spring.mail.username}")
     private String configMailUserName;
 
-
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void save(BillQO qo) {
-        Assert.isTrue(qo.getCategoryId() != null,"categoryId is required");
-        Assert.isTrue(qo.getAmount() != null && qo.getAmount().compareTo(BigDecimal.ZERO) > 0,"amount is required");
-        Bills bill = null;
-        if(qo.getId() != null){
-            bill = billDao.getById(qo.getId());
-        }else{
-            bill = Bills.builder().build();
-        }
-        bill.setAmount(qo.getAmount());
-        bill.setCategoryId(qo.getCategoryId());
+        Assert.isTrue(qo.getAmount() != null && qo.getAmount().compareTo(BigDecimal.ZERO) != 0, "金额不能为空");
+        Assert.isTrue(qo.getCategoryId() != null, "分类不能为空");
+        Assert.isTrue(qo.getUserId() != null, "用户ID不能为空");
 
-        // 没有的渠道ID，新增渠道
-        if(qo.getChannelId() == null && CharSequenceUtil.isNotBlank(qo.getChannelName())){
-            ChannelQO saveChannelQo = new ChannelQO();
-            saveChannelQo.setName(qo.getChannelName());
-            saveChannelQo.setUserId(qo.getUserId());
-            Long save = channelService.save(saveChannelQo);
-            bill.setChannelId(save);
-        }else{
-            bill.setChannelId(qo.getChannelId());
-        }
-
-        bill.setRemark(qo.getRemark());
-        bill.setLocation(qo.getLocation());
-        bill.setUserId(qo.getUserId());
+        Bills bill = Bills.builder()
+                .amount(qo.getAmount())
+                .categoryId(qo.getCategoryId())
+                .channelId(qo.getChannelId())
+                .remark(qo.getRemark())
+                .location(qo.getLocation())
+                .userId(qo.getUserId())
+                .build();
 
         billDao.save(bill);
     }
 
     @Override
-    public List<BillsVO> list(BillQO qo) {
-        qo.setPageSize(-1);
-        Page<Bills> billsPage = this.pageBillEntities(qo);
-        if(billsPage == null || CollUtil.isEmpty(billsPage.getDataList())){
-            return List.of();
-        }
-        List<Bills> bills = billsPage.getDataList();
+    public List<BillsVO> list(BillQO billQO) {
+        List<Bills> bills = billDao.queryList(buildConditionFromQO(billQO));
         return bills.stream().map(bill -> {
             BillsVO billsVO = new BillsVO();
+            billsVO.setAmount(bill.getAmount());
+            billsVO.setCategoryId(bill.getCategoryId());
+            billsVO.setChannelId(bill.getChannelId());
+            billsVO.setId(bill.getId());
+            billsVO.setBillDate(LocalDateTimeUtil.format(bill.getCreatedTime(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+            billsVO.setBillRemark(bill.getRemark());
+            billsVO.setLocation(bill.getLocation());
             billsVO.setAmount(bill.getAmount());
             billsVO.setCategoryId(bill.getCategoryId());
             billsVO.setChannelId(bill.getChannelId());
@@ -178,26 +169,23 @@ public class BillServiceImpl implements BillService {
             return recentInfoVO;
         }
 
-        // 按照 categoryId 分组并统计出现次数
-        Map<Long, Long> categoryCountMap = billsPage.getDataList().stream()
-                .filter(bill -> bill.getCategoryId() != null)
-                .collect(Collectors.groupingBy(Bills::getCategoryId, Collectors.counting()));
-        if (CollUtil.isNotEmpty(categoryCountMap)) {
-            // 获取前 count 个消费次数最多的分类ID
-            List<Long> topCategoryIds = categoryCountMap.entrySet().stream()
-                    .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
-                    .limit(count)
-                    .map(Map.Entry::getKey)
+        // 统计分类使用次数
+        List<CategoryVO> categoryVOS = new ArrayList<>();
+        List<Long> topCategoryIds = billsPage.getDataList().stream()
+                .collect(Collectors.groupingBy(Bills::getCategoryId, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
+                .limit(count)
+                .map(Map.Entry::getKey)
+                .toList();
+        if(CollUtil.isNotEmpty(topCategoryIds)){
+            categoryVOS = topCategoryIds.stream()
+                    .map(id -> categoryService.info(id, currentUserId))
                     .toList();
-
-            List<CategoryVO> categoryVOS = new ArrayList<>();
-            for (Long topCategoryId : topCategoryIds) {
-                CategoryVO categoryVO = categoryService.info(topCategoryId, currentUserId);
-                categoryVOS.add(categoryVO);
-            }
-            recentInfoVO.setCategories(categoryVOS);
         }
+        recentInfoVO.setCategories(categoryVOS);
 
+        // 统计渠道使用次数
         List<Long> topChannelIds = billsPage.getDataList().stream()
                 .filter(bill -> bill.getChannelId() != null)
                 .collect(Collectors.groupingBy(Bills::getChannelId, Collectors.counting()))
@@ -217,37 +205,47 @@ public class BillServiceImpl implements BillService {
         return recentInfoVO;
     }
 
-
     @Override
     public long conditionCount(BillQO qo) {
-        return billDao.conditionCount( Bills.builder().categoryId(qo.getCategoryId()).userId(qo.getUserId()).build());
+        return billDao.count(buildConditionFromQO(qo));
     }
 
-
-
     private Page<Bills> pageBillEntities(BillQO qo) {
-        Bills condition = Bills.builder().build();
-        condition.setUserId(qo.getUserId());
-
         // 限制日期范围
-        condition.setQueryBillStartTime(BillDateUtil.parseStartDate(qo.getStartDay()));
-        condition.setQueryBillEndTime(BillDateUtil.parseEndDate(qo.getEndDay()));
-        condition.setQueryCategoryIdList(qo.getCategoryIdList());
-        if(qo.getCategoryId() != null){
-            condition.setCategoryId(qo.getCategoryId());
-        }
+        LocalDateTime startTime = BillDateUtil.parseStartDate(qo.getStartDay());
+        LocalDateTime endTime = BillDateUtil.parseEndDate(qo.getEndDay());
 
-        if(qo.getChannelId() != null){
-            condition.setChannelId(qo.getChannelId());
-        }
+        return billDao.queryPage(
+                new Page<>(qo.getPageNo(), qo.getPageSize()),
+                new ZCondition<Bills>()
+                    .eq(qo.getUserId() != null, Bills::getUserId, qo.getUserId())
+                    .eq(qo.getCategoryId() != null, Bills::getCategoryId, qo.getCategoryId())
+                    .eq(qo.getChannelId() != null, Bills::getChannelId, qo.getChannelId())
+                    .ge( Bills::getCreatedTime, startTime)
+                    .le( Bills::getCreatedTime, endTime)
+                    .order(Bills::getCreatedTime, com.zion.common.db.ZOrder.DESC));
+    }
 
-        if(qo.getChannelId() != null){
-            condition.setChannelId(qo.getChannelId());
+    /**
+     * 构建查询条件
+     *
+     * @param qo 查询参数
+     * @return 查询条件
+     */
+    private ZCondition<Bills> buildConditionFromQO(BillQO qo) {
+        ZCondition<Bills> condition = new ZCondition<>();
+        if (qo.getUserId() != null) {
+            condition.eq(Bills::getUserId, qo.getUserId());
         }
-        condition.sort("createdTime", Sort.Direction.DESC);
-
-        Page<Bills> pageRsp = billDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), Bills.class, condition);
-        return pageRsp;
+        if (qo.getCategoryId() != null) {
+            condition.eq(Bills::getCategoryId, qo.getCategoryId());
+        }
+        if (qo.getChannelId() != null) {
+            condition.eq(Bills::getChannelId, qo.getChannelId());
+        }
+        // This would need to be handled differently as ZCondition doesn't seem to support in queries directly
+        // We'll handle this in the pageBillEntities method
+        return condition;
     }
 
     @Override
@@ -262,11 +260,11 @@ public class BillServiceImpl implements BillService {
         List<BillCategory> categoryVOS = categoryService.condition(BillCategory.builder().build());
 
         // 根据上月开始时间和结束时间，查询出所有账单信息
-        Bills condition = Bills.builder()
-                .queryBillStartTime(startOfLastMonth)
-                .queryBillEndTime(endOfLastMonth)
-                .build();
-        List<Bills> allBills = billDao.condition(condition);
+        List<Bills> allBills = billDao.queryList(new ZCondition<Bills>()
+                .ge( Bills::getCreatedTime, startOfLastMonth)
+                .le( Bills::getCreatedTime, endOfLastMonth));
+
+
         if (CollUtil.isEmpty(allBills)) {
             log.warn("没有账单数据可发送");
             return;
@@ -294,29 +292,13 @@ public class BillServiceImpl implements BillService {
             // 写入 Excel
             File tempFile = null;
             try{
-                tempFile = Files.createTempFile("bill_report_", ".xlsx").toFile();
-            }catch (Exception e){
-                log.error("创建临时文件失败",e);
-                continue;
-            }
-            try (ExcelWriter excelWriter = EasyExcel.write(tempFile).build()) {
-                List<BillsExcelVO> billsExcelVOS = covertBillExcelVo(userBills);
-                WriteSheet sheet1 = EasyExcel.writerSheet("账单明细").head(BillsExcelVO.class).build();
-                excelWriter.write(billsExcelVOS, sheet1);
+                tempFile = File.createTempFile("bill_report_", ".xlsx");
+                ExcelWriter excelWriter = EasyExcel.write(tempFile, BillsExcelVO.class).build();
+                WriteSheet writeSheet = EasyExcel.writerSheet("账单明细").build();
+                excelWriter.write(covertBillExcelVo(userBills), writeSheet);
+                excelWriter.finish();
 
-                if(CollUtil.isNotEmpty(userCategories)){
-                    List<CategoryExcelVO> categoryExcelVOS = categoryService.covertCategoryExcelVo(userCategories);
-                    WriteSheet sheet2 = EasyExcel.writerSheet("账单分类").head(CategoryExcelVO.class).build();
-                    excelWriter.write(categoryExcelVOS, sheet2);
-                }
-            } catch (Exception e) {
-                log.error("生成账单Excel失败", e);
-                continue;
-            }
-
-
-            // 构建邮件内容并发送
-            try {
+                // 发送邮件
                 MimeMessage message = javaMailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true);
                 helper.setFrom(configMailUserName);

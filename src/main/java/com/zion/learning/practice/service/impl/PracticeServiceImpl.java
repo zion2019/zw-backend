@@ -1,7 +1,9 @@
 package com.zion.learning.practice.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import com.zion.common.basic.BaseEntity;
 import com.zion.common.basic.Page;
+import com.zion.common.db.ZCondition;
 import com.zion.learning.knowledge.service.KnowledgePointService;
 import com.zion.learning.practice.service.PracticeService;
 import com.zion.learning.practice.model.PracticeRecord;
@@ -54,10 +56,10 @@ public class PracticeServiceImpl implements PracticeService {
     
     @Override
     public PracticeRecordVO info(Long id, Long userId) {
-        PracticeRecord condition = PracticeRecord.builder().userId(userId).build();
-        condition.setId(id);
-        condition.setUserId(userId);
-        PracticeRecord practiceRecord = practiceRecordDao.conditionOne(condition);
+        ZCondition<PracticeRecord> condition = new ZCondition<>();
+        condition.eq(BaseEntity::getId, id);
+        condition.eq(PracticeRecord::getUserId, userId);
+        PracticeRecord practiceRecord = practiceRecordDao.queryOne(condition);
         if (practiceRecord == null) {
             return null;
         }
@@ -67,23 +69,28 @@ public class PracticeServiceImpl implements PracticeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean delete(Long id) {
-        PracticeRecord condition = PracticeRecord.builder().build();
-        condition.setId(id);
-        practiceRecordDao.delete(condition);
+        practiceRecordDao.deleteById(id);
         return true;
     }
     
     @Override
     public Page<PracticeRecordVO> page(PracticeRecordQO qo) {
-        PracticeRecord condition = PracticeRecord.builder()
-                .userId(qo.getUserId())
-                .subjectId(qo.getSubjectId())
-                .knowledgePointId(qo.getKnowledgePointId())
-                .result(qo.getResult())
-                .build();
+        ZCondition<PracticeRecord> condition = new ZCondition<>();
+        if (qo.getUserId() != null) {
+            condition.eq(PracticeRecord::getUserId, qo.getUserId());
+        }
+        if (qo.getSubjectId() != null) {
+            condition.eq(PracticeRecord::getSubjectId, qo.getSubjectId());
+        }
+        if (qo.getKnowledgePointId() != null) {
+            condition.eq(PracticeRecord::getKnowledgePointId, qo.getKnowledgePointId());
+        }
+        if (qo.getResult() != null) {
+            condition.eq(PracticeRecord::getResult, qo.getResult());
+        }
 
         Page<PracticeRecordVO> pageRes = new Page<>();
-        Page<PracticeRecord> pages = practiceRecordDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), PracticeRecord.class, condition);
+        Page<PracticeRecord> pages = practiceRecordDao.queryPage(new Page<>(qo.getPageNo(), qo.getPageSize()), condition);
         if(pages == null || CollUtil.isEmpty(pages.getDataList())){
             return pageRes;
         }
@@ -96,7 +103,20 @@ public class PracticeServiceImpl implements PracticeService {
     
     @Override
     public List<PracticeRecordVO> list(PracticeRecord condition) {
-        List<PracticeRecord> practiceRecords = practiceRecordDao.condition(condition);
+        ZCondition<PracticeRecord> zCondition = new ZCondition<>();
+        if (condition.getUserId() != null) {
+            zCondition.eq(PracticeRecord::getUserId, condition.getUserId());
+        }
+        if (condition.getSubjectId() != null) {
+            zCondition.eq(PracticeRecord::getSubjectId, condition.getSubjectId());
+        }
+        if (condition.getKnowledgePointId() != null) {
+            zCondition.eq(PracticeRecord::getKnowledgePointId, condition.getKnowledgePointId());
+        }
+        if (condition.getResult() != null) {
+            zCondition.eq(PracticeRecord::getResult, condition.getResult());
+        }
+        List<PracticeRecord> practiceRecords = practiceRecordDao.queryList(zCondition);
         return PracticeRecordMapper.INSTANCE.toVOs(practiceRecords);
     }
 

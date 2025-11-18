@@ -61,4 +61,12 @@ public interface KnowledgePointService {
      * @param breakDownCnt breakdownCnt
      */
     void updateBreakDownCnt(Long knowledgePointId, Integer breakDownCnt);
+
+    /**
+     * 获取需要复习的 subjectIds
+     * @param currentUserId 当前用户ID
+     * @param count 需要获取的 subjectId 个数
+     * @return subjectIds
+     */
+    List<Long> getReviewTopSubjectIds(Long currentUserId, int count);
 }

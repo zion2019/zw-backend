@@ -3,6 +3,7 @@ package com.zion.learning.stage.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
+import com.zion.common.db.ZCondition;
 import com.zion.common.utils.BaseEntityUtil;
 import com.zion.common.vo.learning.request.SubjectQO;
 import com.zion.learning.stage.service.StageService;
@@ -52,15 +53,13 @@ public class StageServiceImpl implements StageService {
     private void refreshSubjectStageCnt(Long subjectId) {
         SubjectQO refereshSubjectQO = new SubjectQO();
         refereshSubjectQO.setId(subjectId);
-        refereshSubjectQO.setStageCount(stageDao.conditionCount(Stage.builder().subjectId(subjectId).build()));
+        refereshSubjectQO.setStageCount(stageDao.count(new ZCondition<Stage>().eq(Stage::getSubjectId, subjectId)));
         subjectService.refreshStats(refereshSubjectQO);
     }
 
     @Override
     public StageVO info(Long id, Long userId) {
-        Stage condition = Stage.builder().build();
-        condition.setId(id);
-        Stage stage = stageDao.conditionOne(condition);
+        Stage stage = stageDao.getById(id);
         if (stage == null) {
             return null;
         }
@@ -71,15 +70,16 @@ public class StageServiceImpl implements StageService {
     @Transactional(rollbackFor = Exception.class)
     public boolean delete(Long id) {
         // 先查询阶段信息，用于后续更新科目阶段计数
-        Stage condition = Stage.builder().build();
-        condition.setId(id);
-        Stage stage = stageDao.conditionOne(condition);
-        if (stage != null) {
-            stageDao.delete(condition);
-            // 更新科目中的阶段计数
-            if (stage.getSubjectId() != null) {
-                refreshSubjectStageCnt(stage.getSubjectId());
-            }
+        Stage stage = stageDao.getById(id);
+        if (stage == null) {
+            log.error("The stage:{} is not found", id);
+            throw new ServiceException("The stage is not found");
+        }
+        
+        stageDao.deleteById(id);
+        // 更新科目中的阶段计数
+        if (stage.getSubjectId() != null) {
+            refreshSubjectStageCnt(stage.getSubjectId());
         }
         
         return true;
@@ -88,7 +88,10 @@ public class StageServiceImpl implements StageService {
     @Override
     public Page<StageVO> page(StageQO qo) {
         Page<StageVO> pageRes = new Page<>();
-        Page<Stage> pages = stageDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), Stage.class, buildConditionFromQO(qo));
+        Page<Stage> pages = stageDao.queryPage(
+            new Page<>(qo.getPageNo(), qo.getPageSize()), new ZCondition<Stage>()
+                        .eq(qo.getSubjectId() != null,Stage::getSubjectId, qo.getSubjectId())
+                        .like(qo.getTitle() != null,Stage::getTitle, qo.getTitle()));
         if(pages == null || CollUtil.isEmpty(pages.getDataList())){
             return pageRes;
         }
@@ -100,8 +103,10 @@ public class StageServiceImpl implements StageService {
     }
     
     @Override
-    public List<StageVO> list(Stage condition) {
-        List<Stage> stages = stageDao.condition(condition);
+    public List<StageVO> list(StageQO qo) {
+        List<Stage> stages = stageDao.queryList(new ZCondition<Stage>()
+                        .eq(qo.getSubjectId() != null,Stage::getSubjectId, qo.getSubjectId())
+                        .like(qo.getTitle() != null,Stage::getTitle, qo.getTitle()));
         return StageMapper.INSTANCE.toVOs(stages);
     }
     
@@ -109,9 +114,7 @@ public class StageServiceImpl implements StageService {
     @Transactional(rollbackFor = Exception.class)
     public boolean refreshStats(StageQO qo) {
         // 更新阶段中的知识点计数
-        Stage condition = Stage.builder().build();
-        condition.setId(qo.getId());
-        Stage stage = stageDao.conditionOne(condition);
+        Stage stage = stageDao.getById(qo.getId());
         if (stage == null) {
             log.error("The stage:{} is not found", qo.getId());
             throw new ServiceException("The stage is not found");

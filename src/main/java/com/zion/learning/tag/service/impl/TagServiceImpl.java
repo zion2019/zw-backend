@@ -2,6 +2,7 @@ package com.zion.learning.tag.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import com.zion.common.basic.Page;
+import com.zion.common.db.ZCondition;
 import com.zion.common.utils.BaseEntityUtil;
 import com.zion.common.vo.learning.request.TagQO;
 import com.zion.common.vo.learning.response.TagVO;
@@ -34,10 +35,7 @@ public class TagServiceImpl implements TagService {
     
     @Override
     public TagVO info(Long id, Long userId) {
-        Tag condition = new Tag();
-        condition.setId(id);
-        condition.setUserId(userId);
-        Tag tag = tagDao.conditionOne(condition);
+        Tag tag = tagDao.getById(id);
         if(tag == null){
             return null;
         }
@@ -47,16 +45,19 @@ public class TagServiceImpl implements TagService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean delete(Long id) {
-        Tag condition = new Tag();
-        condition.setId(id);
-        tagDao.delete(condition);
+        tagDao.deleteById(id);
         return true;
     }
     
     @Override
     public Page<TagVO> page(TagQO qo) {
         Page<TagVO> pageRes = new Page<>();
-        Page<Tag> pages = tagDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), Tag.class, buildConditionFromQO(qo));
+        Page<Tag> pages = tagDao.queryPage(
+                new Page<>(qo.getPageNo(), qo.getPageSize()), 
+                new ZCondition<Tag>()
+                        .eq(qo.getUserId() != null, Tag::getUserId, qo.getUserId())
+                        .eq(qo.getParentId() != null, Tag::getParentId, qo.getParentId())
+                        .like(qo.getName() != null, Tag::getName, qo.getName()));
         if(pages == null || CollUtil.isEmpty(pages.getDataList())){
             return pageRes;
         }
@@ -69,15 +70,19 @@ public class TagServiceImpl implements TagService {
     
     @Override
     public List<TagVO> list(TagQO qo) {
-        List<Tag> tags = tagDao.condition(buildConditionFromQO(qo));
+        List<Tag> tags = tagDao.queryList(
+                new ZCondition<Tag>()
+                        .eq(qo.getUserId() != null, Tag::getUserId, qo.getUserId())
+                        .eq(qo.getParentId() != null, Tag::getParentId, qo.getParentId())
+                        .like(qo.getName() != null, Tag::getName, qo.getName()));
         return TagMapper.INSTANCE.toVOs(tags);
     }
     
     @Override
     public List<TagVO> tree(Long userId) {
-        Tag condition = new Tag();
-        condition.setUserId(userId);
-        List<Tag> tags = tagDao.condition(condition);
+        List<Tag> tags = tagDao.queryList(
+                new ZCondition<Tag>()
+                        .eq(Tag::getUserId, userId));
         return TagMapper.INSTANCE.toVOs(tags);
     }
     
@@ -88,7 +93,7 @@ public class TagServiceImpl implements TagService {
      * @return 查询条件
      */
     private Tag buildConditionFromQO(TagQO qo) {
-        Tag condition = new Tag();
+        Tag condition = Tag.builder().build();
         condition.setId(qo.getId());
         condition.setName(qo.getName());
         condition.setColor(qo.getColor());

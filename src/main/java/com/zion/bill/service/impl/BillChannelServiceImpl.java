@@ -7,6 +7,7 @@ import com.zion.bill.dao.BillChannelDao;
 import com.zion.bill.model.BillChannel;
 import com.zion.bill.service.BillChannelService;
 import com.zion.common.basic.Page;
+import com.zion.common.db.ZCondition;
 import com.zion.common.vo.bill.req.ChannelQO;
 import com.zion.common.vo.bill.rsp.ChannelVO;
 import jakarta.annotation.Resource;
@@ -55,7 +56,7 @@ public class BillChannelServiceImpl implements BillChannelService {
         BillChannel channel = billChannelDao.getById(id);
         Assert.isTrue(channel != null && channel.getUserId().equals(userId), "渠道不存在或无权操作");
         
-        billChannelDao.remove(channel);
+        billChannelDao.deleteById(id);
     }
 
     @Override
@@ -75,17 +76,16 @@ public class BillChannelServiceImpl implements BillChannelService {
     public Page<ChannelVO> page(ChannelQO qo) {
         Assert.isTrue(qo.getUserId() != null, "userId is required");
         
-        BillChannel condition = BillChannel.builder()
-                .userId(qo.getUserId())
-                .name(qo.getName())
-                .status(qo.getStatus())
-                .build();
-        
-        condition.sort("createdTime", Sort.Direction.DESC);
-        
-        Page<BillChannel> channelPage = billChannelDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), BillChannel.class, condition);
-        
         Page<ChannelVO> pageRes = new Page<>();
+        Page<BillChannel> channelPage = billChannelDao.queryPage(
+                new Page<>(qo.getPageNo(), qo.getPageSize()),
+                new ZCondition<BillChannel>()
+                        .eq(BillChannel::getUserId, qo.getUserId())
+                        .like(qo.getName() != null, BillChannel::getName, qo.getName())
+                        .eq(qo.getStatus() != null, BillChannel::getStatus, qo.getStatus())
+                        .order(BillChannel::getCreatedTime, com.zion.common.db.ZOrder.DESC)
+        );
+
         pageRes.setPageNo(channelPage.getPageNo());
         pageRes.setPageSize(channelPage.getPageSize());
         pageRes.setTotal(channelPage.getTotal());
@@ -102,16 +102,14 @@ public class BillChannelServiceImpl implements BillChannelService {
 
     @Override
     public List<ChannelVO> condition(ChannelQO qo) {
-        BillChannel condition = BillChannel.builder()
-                .userId(qo.getUserId())
-                .name(qo.getName())
-                .status(qo.getStatus())
-                .build();
-        
-        condition.sort("createdTime", Sort.Direction.DESC);
-        
-        List<BillChannel> channels = billChannelDao.condition(condition);
-        
+        List<BillChannel> channels = billChannelDao.queryList(
+                new ZCondition<BillChannel>()
+                        .eq(qo.getUserId() != null, BillChannel::getUserId, qo.getUserId())
+                        .like(qo.getName() != null, BillChannel::getName, qo.getName())
+                        .eq(qo.getStatus() != null, BillChannel::getStatus, qo.getStatus())
+                        .order(BillChannel::getCreatedTime, com.zion.common.db.ZOrder.DESC)
+        );
+
         if (CollUtil.isEmpty(channels)) {
             return ListUtil.empty();
         }

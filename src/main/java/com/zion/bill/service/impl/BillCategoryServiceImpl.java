@@ -15,6 +15,7 @@ import com.zion.bill.service.BillCategoryService;
 import com.zion.bill.service.BillService;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
+import com.zion.common.db.ZCondition;
 import com.zion.common.vo.bill.req.CategoryQO;
 import com.zion.common.vo.bill.req.BillQO;
 import com.zion.common.vo.bill.rsp.BillsExcelVO;
@@ -72,8 +73,9 @@ public class BillCategoryServiceImpl implements BillCategoryService {
                 }
             }
         } else {
-            Assert.isTrue(billCategoryDao.conditionCount(BillCategory.builder()
-                    .code(qo.getCode()).build()) == 0, "编码" + qo.getCode() + "已存在");
+            long count = billCategoryDao.count(new ZCondition<BillCategory>()
+                    .eq(BillCategory::getCode, qo.getCode()));
+            Assert.isTrue(count == 0, "编码" + qo.getCode() + "已存在");
         }
 
         int level = 1;
@@ -89,8 +91,11 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         }
 
         // 检查同一父级下是否存在相同名称的分类
-        long sameNameCount = billCategoryDao.conditionCount(BillCategory.builder()
-                .parentId(parentId).excludeId(qo.getId()).title(qo.getTitle()).userId(qo.getUserId()).build());
+        long sameNameCount = billCategoryDao.count(new ZCondition<BillCategory>()
+                .eq(BillCategory::getParentId, parentId)
+                .ne( BillCategory::getId, qo.getId()) // exclude id
+                .eq(BillCategory::getTitle, qo.getTitle())
+                .eq(BillCategory::getUserId, qo.getUserId()));
         Assert.isTrue(sameNameCount == 0, "在当前分类下已经存在同名分类：" + qo.getTitle());
 
         BillCategory category = BeanUtil.copyProperties(qo, BillCategory.class);
@@ -105,6 +110,7 @@ public class BillCategoryServiceImpl implements BillCategoryService {
             billCategoryDao.save(category);
             // 更新全路径，添加自己的ID
             category.setFullPath(fullPath + F_STRING + category.getId());
+            billCategoryDao.save(category);
         } else {
             billCategoryDao.save(category);
         }
@@ -115,8 +121,8 @@ public class BillCategoryServiceImpl implements BillCategoryService {
      */
     public List<Tree<String>> tree(Long currentUserId, Long excludeId, Boolean root) {
         List<Tree<String>> list = new ArrayList<>();
-        List<BillCategory> categories = billCategoryDao.condition(BillCategory.builder()
-                .userId(currentUserId).build());
+        List<BillCategory> categories = billCategoryDao.queryList(new ZCondition<BillCategory>()
+                .eq(BillCategory::getUserId, currentUserId));
 
         if (CollUtil.isEmpty(categories)) {
             return list;
@@ -158,9 +164,6 @@ public class BillCategoryServiceImpl implements BillCategoryService {
      * 删除分类
      */
     public void delete(Long categoryId) {
-        BillCategory condition = BillCategory.builder().build();
-        condition.setId(categoryId);
-
         // 校验是否存在账单明细，存在则不允许删除
         BillQO billQO = new BillQO();
         billQO.setCategoryId(categoryId);
@@ -169,14 +172,14 @@ public class BillCategoryServiceImpl implements BillCategoryService {
             throw new ServiceException("分类下存在账单，无法删除");
         }
 
-        billCategoryDao.delete(condition);
+        billCategoryDao.deleteById(categoryId);
     }
 
     @Override
     public CategoryVO info(Long id, Long currentUserId) {
-        BillCategory condition = BillCategory.builder().userId(currentUserId).build();
-        condition.setId(id);
-        BillCategory category = billCategoryDao.conditionOne(condition);
+        BillCategory category = billCategoryDao.queryOne(new ZCondition<BillCategory>()
+                .eq(BillCategory::getUserId, currentUserId)
+                .eq(BillCategory::getId, id));
         if(category == null){
             throw new ServiceException("Unknown category");
         }
@@ -190,15 +193,11 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         List<CategoryVO> categoryVOS = new ArrayList<>();
 
         // 构造基础查询条件
-        BillCategory condition = BillCategory.builder().userId(qo.getUserId()).build();
-        if(CharSequenceUtil.isNotBlank(qo.getTitle())){
-            condition.setTitle(qo.getTitle());
-        }
-        if(qo.getParentId() != null){
-            condition.setParentId(qo.getParentId());
-        }
-        Page<BillCategory> pageRsp = billCategoryDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), BillCategory.class, condition);
-        List<BillCategory> justQueryCategories = pageRsp.getDataList();
+        List<BillCategory> justQueryCategories = billCategoryDao.queryList(new ZCondition<BillCategory>()
+                .eq(BillCategory::getUserId, qo.getUserId())
+                .like(CharSequenceUtil.isNotBlank(qo.getTitle()), BillCategory::getTitle, qo.getTitle())
+                .eq(qo.getParentId() != null, BillCategory::getParentId, qo.getParentId()));
+        
         if(CollUtil.isNotEmpty(justQueryCategories)){
             categoryVOS = BeanUtil.copyToList(justQueryCategories, CategoryVO.class);
         }
@@ -293,7 +292,10 @@ public class BillCategoryServiceImpl implements BillCategoryService {
 
     @Override
     public List<BillCategory> condition(BillCategory build) {
-        return billCategoryDao.condition(build);
+        return billCategoryDao.queryList(new ZCondition<BillCategory>()
+                .eq(build.getUserId() != null, BillCategory::getUserId, build.getUserId())
+                .eq(build.getTitle() != null, BillCategory::getTitle, build.getTitle())
+                .eq(build.getParentId() != null, BillCategory::getParentId, build.getParentId()));
     }
 
     @Override
@@ -347,8 +349,8 @@ public class BillCategoryServiceImpl implements BillCategoryService {
         }
 
         // 获取当前分类下的所有子分类，逻辑是：获取当前分类code， like bill_category.fullPath  所有 code%
-        BillCategory condition = BillCategory.builder().parentIdLike(parentCategory.getId()).build();
-        List<BillCategory> childrenCategories = billCategoryDao.condition(condition);
+        List<BillCategory> childrenCategories = billCategoryDao.queryList(new ZCondition<BillCategory>()
+                .like(parentCategory.getId() != null, BillCategory::getFullPath, "%" + parentCategory.getId() + "%"));
         if(CollUtil.isNotEmpty(childrenCategories)){
             categories.addAll(BeanUtil.copyToList(childrenCategories, CategoryVO.class));
         }

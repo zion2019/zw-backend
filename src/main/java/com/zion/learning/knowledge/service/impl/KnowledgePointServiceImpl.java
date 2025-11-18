@@ -1,10 +1,12 @@
 package com.zion.learning.knowledge.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
+import com.zion.common.db.ZCondition;
+import com.zion.common.db.ZOrder;
 import com.zion.common.vo.learning.response.LearnStrategyNextVO;
-import com.zion.learning.knowledge.dao.KnowledgePointCondition;
 import com.zion.learning.knowledge.service.KnowledgePointService;
 import com.zion.learning.knowledge.model.KnowledgePoint;
 import com.zion.learning.knowledge.dao.KnowledgePointDao;
@@ -20,14 +22,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class KnowledgePointServiceImpl implements KnowledgePointService {
     
     @Resource
-    private KnowledgePointDao knowledgePointDao;
+    private KnowledgePointDao dao;
     
     @Resource
     private LearningStrategyService learningStrategyService;
@@ -50,7 +58,7 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
             knowledgePoint.setMasteryLevelCode(nextVo.getMasteryLevel().getCode());
         }
 
-        knowledgePointDao.save(knowledgePoint);
+        dao.save(knowledgePoint);
         if (knowledgePoint.getStageId() != null) {
             refreshStageKnowledgePointCnt(knowledgePoint.getStageId());
         }
@@ -60,10 +68,7 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
     
     @Override
     public KnowledgePointVO info(Long id, Long userId) {
-        KnowledgePoint condition = KnowledgePoint.builder().userId(userId).build();
-        condition.setId(id);
-        condition.setUserId(userId);
-        KnowledgePoint knowledgePoint = knowledgePointDao.conditionOne(condition);
+        KnowledgePoint knowledgePoint = dao.getById(id);
         if (knowledgePoint == null) {
             return null;
         }
@@ -74,14 +79,12 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
     @Transactional(rollbackFor = Exception.class)
     public boolean delete(Long id) {
         // 先查询知识点信息，用于后续更新stage和subject中的知识点数量
-        KnowledgePoint condition = KnowledgePoint.builder().build();
-        condition.setId( id);
-        KnowledgePoint knowledgePoint = knowledgePointDao.conditionOne(condition);
+        KnowledgePoint knowledgePoint = dao.getById(id);
         if(knowledgePoint == null){
             log.error("The knowledge point:{} is not found", id);
             throw new RuntimeException("The knowledge point is not found");
         }
-        knowledgePointDao.delete(condition);
+        dao.deleteById(id);
         refreshStageKnowledgePointCnt(knowledgePoint.getStageId());
         
         return true;
@@ -90,11 +93,11 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
     @Override
     public Page<KnowledgePointVO> page(KnowledgePointQO qo) {
         Page<KnowledgePointVO> pageRes = new Page<>();
-        Page<KnowledgePoint> pages = knowledgePointDao.pageQuery(
-            new Page<>(qo.getPageNo(), qo.getPageSize()), 
-            KnowledgePoint.class, 
-            buildConditionFromQO(qo));
-            
+        Page<KnowledgePoint> pages = dao.queryPage(
+            new Page<>(qo.getPageNo(), qo.getPageSize()), new ZCondition<KnowledgePoint>()
+                        .eq(qo.getStageId() != null,KnowledgePoint::getStageId, qo.getStageId())
+                        .eq(qo.getSubjectId() != null,KnowledgePoint::getStageId, qo.getStageId())
+                        .like(CharSequenceUtil.isNotBlank(qo.getTitle()),KnowledgePoint::getTitle, qo.getTitle()));
         if(pages == null || CollUtil.isEmpty(pages.getDataList())){
             return pageRes;
         }
@@ -108,8 +111,10 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
     
     @Override
     public List<KnowledgePointVO> list(KnowledgePointQO qo) {
-        knowledgePointDao.condition(buildConditionFromQO(qo),buildConditionFromQO())
-        List<KnowledgePoint> knowledgePoints = knowledgePointDao.condition(condition);
+        List<KnowledgePoint> knowledgePoints = dao.queryList(new ZCondition<KnowledgePoint>()
+                        .eq(qo.getStageId() != null,KnowledgePoint::getStageId, qo.getStageId())
+                        .eq(qo.getSubjectId() != null,KnowledgePoint::getStageId, qo.getStageId())
+                        .like(CharSequenceUtil.isNotBlank(qo.getTitle()),KnowledgePoint::getTitle, qo.getTitle()));
         return KnowledgePointMapper.INSTANCE.toVOs(knowledgePoints);
     }
 
@@ -118,7 +123,7 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
     @Transactional(rollbackFor = Exception.class)
     public void practice(Long knowledgePointId, PracticeResult result, Long userId) {
         // 获取知识点
-        KnowledgePoint knowledgePoint = knowledgePointDao.getById(knowledgePointId);
+        KnowledgePoint knowledgePoint = dao.getById(knowledgePointId);
         if (knowledgePoint == null ) {
             log.error("The knowledge point:{} is not found", knowledgePointId);
             throw new RuntimeException("The knowledge point is not found");
@@ -135,22 +140,46 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
         }
 
         // 更新知识点
-        knowledgePointDao.save(knowledgePoint);
+        dao.save(knowledgePoint);
     }
 
     @Override
     public void updateBreakDownCnt(Long knowledgePointId, Integer breakDownCnt) {
         KnowledgePoint condition = KnowledgePoint.builder().build();
         condition.setId(knowledgePointId);
-        KnowledgePoint knowledgePoint = knowledgePointDao.getById(knowledgePointId);
+        KnowledgePoint knowledgePoint = dao.getById(knowledgePointId);
         if (knowledgePoint == null){
             log.error("The knowledge point:{} is not found", knowledgePointId);
             throw new ServiceException("The knowledge point is not found");
         }
 
         knowledgePoint.setBreakdownCount(breakDownCnt);
-        knowledgePointDao.save(knowledgePoint);
+        dao.save(knowledgePoint);
 
+    }
+
+    @Override
+    public List<Long> getReviewTopSubjectIds(Long currentUserId, int count) {
+
+        // today last
+        LocalDateTime endOfToday = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+        // query pages
+        Page<KnowledgePoint> pageResult = dao.queryPage(
+                new Page<>(1, 1000), new ZCondition<KnowledgePoint>()
+                .le(KnowledgePoint::getNextReviewTime, endOfToday)
+                .select(KnowledgePoint::getSubjectId, KnowledgePoint::getNextReviewTime)
+                .order(KnowledgePoint::getNextReviewTime, ZOrder.ASC));
+        if(pageResult == null || pageResult.getDataList() == null){
+            return List.of();
+        }
+
+        // find early knowledge point for count
+        return pageResult.getDataList().stream()
+                .sorted(Comparator.comparing(KnowledgePoint::getNextReviewTime))
+                .map(KnowledgePoint::getSubjectId)
+                .distinct()
+                .limit(count)
+                .toList();
     }
 
     /**
@@ -161,7 +190,9 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
     private void refreshStageKnowledgePointCnt(Long stageId) {
         StageQO refreshStageQO = new StageQO();
         refreshStageQO.setId(stageId);
-        refreshStageQO.setKnowledgePointCount(knowledgePointDao.conditionCount(KnowledgePoint.builder().stageId(stageId).build()));
+        refreshStageQO.setKnowledgePointCount(dao
+                .count(new ZCondition<KnowledgePoint>()
+                .eq(KnowledgePoint::getStageId, stageId)));
         stageService.refreshStats(refreshStageQO);
     }
 
@@ -184,21 +215,5 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
         return condition;
     }
 
-    /**
-     * 构建额外查询条件
-     *
-     * @param qo 查询参数
-     * @return 查询条件
-     */
-    private KnowledgePointCondition buildExtendConditionFromQO(KnowledgePointQO qo) {
-        KnowledgePointCondition extendCondition = KnowledgePointCondition.builder().build();
-        condition.setId(qo.getId());
-        condition.setTitle(qo.getTitle());
-        condition.setStageId(qo.getStageId());
-        condition.setSubjectId(qo.getSubjectId());
-        condition.setUserId(qo.getUserId());
-        condition.setBreakdownCount(qo.getBreakdownCount());
-        condition.setNextReviewTime(qo.getNextReviewTime());
-        return extendCondition;
-    }
+
 }

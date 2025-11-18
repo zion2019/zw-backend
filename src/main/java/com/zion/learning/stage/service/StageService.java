@@ -40,10 +40,10 @@ public interface StageService {
     
     /**
      * 根据条件查询阶段列表
-     * @param condition 查询条件
+     * @param qo 查询条件
      * @return 阶段列表
      */
-    List<StageVO> list(Stage condition);
+    List<StageVO> list(StageQO qo);
     
     /**
      * 刷新指定阶段的知识点计数

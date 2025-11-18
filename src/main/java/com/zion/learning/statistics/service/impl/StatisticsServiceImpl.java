@@ -1,7 +1,8 @@
 package com.zion.learning.statistics.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.date.DateUtil;
+import com.zion.common.db.ZCondition;
+import com.zion.common.db.ZOrder;
 import com.zion.common.vo.learning.response.StatisticsSummaryVO;
 import com.zion.common.vo.learning.response.MasteryBubbleVO;
 import com.zion.common.vo.learning.response.ChartDataVO;
@@ -38,8 +39,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         StatisticsSummaryVO summary = new StatisticsSummaryVO();
         
         // 获取用户所有知识点
-        KnowledgePoint knowledgePointCondition = KnowledgePoint.builder().userId(userId).build();
-        List<KnowledgePoint> knowledgePoints = knowledgePointDao.condition(knowledgePointCondition);
+        List<KnowledgePoint> knowledgePoints = knowledgePointDao.queryList(
+                new ZCondition<KnowledgePoint>().eq(KnowledgePoint::getUserId, userId));
         
         // 知识点总数
         summary.setTotalKnowledgePoints(knowledgePoints.size());
@@ -51,8 +52,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         summary.setMasteredKnowledgePoints((int) masteredCount);
         
         // 获取用户所有练习记录
-        PracticeRecord practiceRecordCondition = PracticeRecord.builder().userId(userId).build();
-        List<PracticeRecord> practiceRecords = practiceRecordDao.condition(practiceRecordCondition);
+        List<PracticeRecord> practiceRecords = practiceRecordDao.queryList(
+                new ZCondition<PracticeRecord>().eq(PracticeRecord::getUserId, userId));
         
         // 复习总次数
         summary.setTotalReviewCount(practiceRecords.size());
@@ -71,12 +72,14 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 获取最近30天内复习过的知识点
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
         
-        PracticeRecord practiceRecordCondition = PracticeRecord.builder().userId(userId).build();
-        List<PracticeRecord> practiceRecords = practiceRecordDao.condition(practiceRecordCondition);
+        List<PracticeRecord> practiceRecords = practiceRecordDao.queryList(
+                new ZCondition<PracticeRecord>()
+                        .eq(PracticeRecord::getUserId, userId)
+                        .ge(PracticeRecord::getPracticeStartTime, thirtyDaysAgo));
         
         // 过滤出最近30天的记录
         List<PracticeRecord> recentPracticeRecords = practiceRecords.stream()
-                .filter(record -> record.getPracticeTime() != null && record.getPracticeTime().isAfter(thirtyDaysAgo))
+                .filter(record -> record.getPracticeStartTime() != null)
                 .collect(Collectors.toList());
         
         if (CollUtil.isEmpty(recentPracticeRecords)) {
@@ -94,9 +97,17 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
         
         // 获取知识点信息
+        List<KnowledgePoint> knowledgePoints = knowledgePointDao.queryList(
+                new ZCondition<KnowledgePoint>()
+                        .eq(KnowledgePoint::getUserId, userId)
+                        .in(KnowledgePoint::getId, knowledgePointIds));
+        
+        Map<Long, KnowledgePoint> knowledgePointMap = knowledgePoints.stream()
+                .collect(Collectors.toMap(KnowledgePoint::getId, kp -> kp));
+        
         knowledgePointIds.forEach(knowledgePointId -> {
-            KnowledgePoint knowledgePoint = knowledgePointDao.getById(knowledgePointId);
-            if (knowledgePoint != null && userId.equals(knowledgePoint.getUserId())) {
+            KnowledgePoint knowledgePoint = knowledgePointMap.get(knowledgePointId);
+            if (knowledgePoint != null) {
                 MasteryBubbleVO bubble = new MasteryBubbleVO();
                 bubble.setKnowledgePointId(knowledgePoint.getId());
                 bubble.setKnowledgePointName(knowledgePoint.getTitle());
@@ -105,10 +116,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                 // 获取该知识点的最后复习时间
                 Optional<PracticeRecord> lastRecord = recentPracticeRecords.stream()
                         .filter(record -> knowledgePointId.equals(record.getKnowledgePointId()))
-                        .max(Comparator.comparing(PracticeRecord::getPracticeTime));
+                        .max(Comparator.comparing(PracticeRecord::getPracticeStartTime));
                 
                 if (lastRecord.isPresent()) {
-                    bubble.setLastReviewTime(DateUtil.formatLocalDateTime(lastRecord.get().getPracticeTime()));
+                    bubble.setLastReviewTime(lastRecord.get().getPracticeStartTime().toString());
                     bubbles.add(bubble);
                 }
             }
@@ -126,19 +137,16 @@ public class StatisticsServiceImpl implements StatisticsService {
         LocalDateTime endDate = LocalDateTime.now();
         
         // 获取用户练习记录
-        PracticeRecord practiceRecordCondition = PracticeRecord.builder().userId(userId).build();
-        List<PracticeRecord> practiceRecords = practiceRecordDao.condition(practiceRecordCondition);
-        
-        // 过滤出指定时间范围内的记录
-        List<PracticeRecord> filteredRecords = practiceRecords.stream()
-                .filter(record -> record.getPracticeTime() != null && 
-                        !record.getPracticeTime().isBefore(startDate) && 
-                        !record.getPracticeTime().isAfter(endDate))
-                .collect(Collectors.toList());
+        List<PracticeRecord> practiceRecords = practiceRecordDao.queryList(
+                new ZCondition<PracticeRecord>()
+                        .eq(PracticeRecord::getUserId, userId)
+                        .ge(PracticeRecord::getPracticeStartTime, startDate)
+                        .le(PracticeRecord::getPracticeStartTime, endDate));
         
         // 按日期分组统计
-        Map<LocalDate, List<PracticeRecord>> recordsByDate = filteredRecords.stream()
-                .collect(Collectors.groupingBy(record -> record.getPracticeTime().toLocalDate()));
+        Map<LocalDate, List<PracticeRecord>> recordsByDate = practiceRecords.stream()
+                .filter(record -> record.getPracticeStartTime() != null)
+                .collect(Collectors.groupingBy(record -> record.getPracticeStartTime().toLocalDate()));
         
         // 生成完整的日期范围数据
         LocalDate currentDate = startDate.toLocalDate();
@@ -190,21 +198,22 @@ public class StatisticsServiceImpl implements StatisticsService {
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(29).withHour(0).withMinute(0).withSecond(0); // 30天包括今天
         
         // 获取用户练习记录
-        PracticeRecord practiceRecordCondition = PracticeRecord.builder().userId(userId).build();
-        List<PracticeRecord> practiceRecords = practiceRecordDao.condition(practiceRecordCondition);
+        List<PracticeRecord> practiceRecords = practiceRecordDao.queryList(
+                new ZCondition<PracticeRecord>()
+                        .eq(PracticeRecord::getUserId, userId));
         
         // 本月记录
         List<PracticeRecord> currentMonthRecords = practiceRecords.stream()
-                .filter(record -> record.getPracticeTime() != null && 
-                        !record.getPracticeTime().isBefore(firstDayOfMonth) && 
-                        !record.getPracticeTime().isAfter(lastDayOfMonth))
+                .filter(record -> record.getPracticeStartTime() != null && 
+                        !record.getPracticeStartTime().isBefore(firstDayOfMonth) && 
+                        !record.getPracticeStartTime().isAfter(lastDayOfMonth))
                 .collect(Collectors.toList());
         
         // 最近30天记录
         List<PracticeRecord> recent30DaysRecords = practiceRecords.stream()
-                .filter(record -> record.getPracticeTime() != null && 
-                        !record.getPracticeTime().isBefore(thirtyDaysAgo) && 
-                        !record.getPracticeTime().isAfter(LocalDateTime.now()))
+                .filter(record -> record.getPracticeStartTime() != null && 
+                        !record.getPracticeStartTime().isBefore(thirtyDaysAgo) && 
+                        !record.getPracticeStartTime().isAfter(LocalDateTime.now()))
                 .collect(Collectors.toList());
         
         // 本月统计数据

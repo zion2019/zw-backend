@@ -3,7 +3,7 @@ package com.zion.learning.breakdown.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
-import com.zion.common.utils.BaseEntityUtil;
+import com.zion.common.db.ZCondition;
 import com.zion.common.vo.learning.request.BreakdownQO;
 import com.zion.common.vo.learning.response.BreakdownVO;
 import com.zion.learning.breakdown.mapper.BreakdownMapper;
@@ -40,9 +40,8 @@ public class BreakdownServiceImpl implements BreakdownService {
     
     @Override
     public BreakdownVO info(Long id, Long userId) {
-        Breakdown condition = Breakdown.builder().build();
-        condition.setId(id);
-        Breakdown breakdown = breakdownDao.conditionOne(condition);
+        Breakdown breakdown = breakdownDao.queryOne(new ZCondition<Breakdown>()
+                .eq(Breakdown::getId, id));
         if(breakdown == null){
             return null;
         }
@@ -58,9 +57,7 @@ public class BreakdownServiceImpl implements BreakdownService {
             throw new ServiceException("breakdown not exist");
         }
 
-        Breakdown condition = Breakdown.builder().build();
-        condition.setId(id);
-        breakdownDao.delete(condition);
+        breakdownDao.deleteById(id);
 
         refreshKnowledgePointCnt(breakdown.getKnowledgePointId());
         return true;
@@ -69,7 +66,9 @@ public class BreakdownServiceImpl implements BreakdownService {
     @Override
     public Page<BreakdownVO> page(BreakdownQO qo) {
         Page<BreakdownVO> pageRes = new Page<>();
-        Page<Breakdown> pages = breakdownDao.pageQuery(new Page<>(qo.getPageNo(), qo.getPageSize()), Breakdown.class, buildConditionFromQO(qo));
+        Page<Breakdown> pages = breakdownDao.queryPage(
+                new Page<>(qo.getPageNo(), qo.getPageSize()), 
+                buildConditionFromZCondition(qo));
         if(pages == null || CollUtil.isEmpty(pages.getDataList())){
             return pageRes;
         }
@@ -82,7 +81,7 @@ public class BreakdownServiceImpl implements BreakdownService {
     
     @Override
     public List<BreakdownVO> list(BreakdownQO qo) {
-        List<Breakdown> breakdowns = breakdownDao.condition(buildConditionFromQO(qo));
+        List<Breakdown> breakdowns = breakdownDao.queryList(buildConditionFromZCondition(qo));
         return BreakdownMapper.INSTANCE.toVOs(breakdowns);
     }
     
@@ -92,14 +91,13 @@ public class BreakdownServiceImpl implements BreakdownService {
      * @param qo 查询参数
      * @return 查询条件
      */
-    private Breakdown buildConditionFromQO(BreakdownQO qo) {
-        Breakdown condition = Breakdown.builder().build();
-        condition.setId(qo.getId());
-        condition.setTitle(qo.getTitle());
-        condition.setContent(qo.getContent());
-        condition.setKnowledgePointId(qo.getKnowledgePointId());
-        condition.setSubjectId(qo.getSubjectId());
-        return condition;
+    private ZCondition<Breakdown> buildConditionFromZCondition(BreakdownQO qo) {
+        return new ZCondition<Breakdown>()
+                .eq(qo.getId() != null, Breakdown::getId, qo.getId())
+                .like(qo.getTitle() != null, Breakdown::getTitle, qo.getTitle())
+                .eq(qo.getContent() != null, Breakdown::getContent, qo.getContent())
+                .eq(qo.getKnowledgePointId() != null, Breakdown::getKnowledgePointId, qo.getKnowledgePointId())
+                .eq(qo.getSubjectId() != null, Breakdown::getSubjectId, qo.getSubjectId());
     }
 
     /**
@@ -108,7 +106,8 @@ public class BreakdownServiceImpl implements BreakdownService {
      * @param knowledgePointId 知识点ID
      */
     private void refreshKnowledgePointCnt(Long knowledgePointId) {
-        long breakDownCnt = breakdownDao.conditionCount(Breakdown.builder().knowledgePointId(knowledgePointId).build());
+        long breakDownCnt = breakdownDao.count(new ZCondition<Breakdown>()
+                .eq(Breakdown::getKnowledgePointId, knowledgePointId));
         knowledgePointService.updateBreakDownCnt(knowledgePointId,Long.valueOf(breakDownCnt).intValue());
     }
 }

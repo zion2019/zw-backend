@@ -37,7 +37,7 @@ public class StageController extends BaseController {
     }
     
     @GetMapping
-    public R list(Stage condition) {
+    public R list(StageQO condition) {
         return R.ok(stageService.list(condition));
     }
 }

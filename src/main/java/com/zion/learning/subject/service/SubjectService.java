@@ -46,8 +46,8 @@ public interface SubjectService {
     
     /**
      * 根据条件查询科目列表
-     * @param condition 查询条件
+     * @param qo 查询条件
      * @return 科目列表
      */
-    List<SubjectVO> list(Subject condition);
+    List<SubjectVO> list(SubjectQO qo);
 }
