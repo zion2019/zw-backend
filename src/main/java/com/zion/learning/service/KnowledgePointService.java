@@ -4,7 +4,6 @@ import com.zion.common.basic.Page;
 import com.zion.learning.common.constents.PracticeResult;
 import com.zion.common.vo.learning.request.KnowledgePointQO;
 import com.zion.common.vo.learning.response.KnowledgePointVO;
-import com.zion.common.vo.learning.response.KnowledgePointPracticeVO;
 
 import java.util.List;
 
