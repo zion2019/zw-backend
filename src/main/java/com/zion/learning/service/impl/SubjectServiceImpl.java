@@ -24,6 +24,12 @@ public class SubjectServiceImpl implements SubjectService {
     
     @Resource
     private SubjectDao subjectDao;
+
+    @Override
+    public SubjectVO getTodayReviewList(Long currentUserId) {
+        // todo 今日待复习科目列表
+        return null;
+    }
     
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -90,7 +96,8 @@ public class SubjectServiceImpl implements SubjectService {
                 .map(SubjectMapper.INSTANCE::toVO)
                 .collect(Collectors.toList());
     }
-    
+
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean refreshStats(SubjectQO qo) {

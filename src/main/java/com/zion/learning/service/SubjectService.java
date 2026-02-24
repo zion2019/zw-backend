@@ -50,4 +50,11 @@ public interface SubjectService {
      * @return 科目列表
      */
     List<SubjectVO> list(SubjectQO qo);
+
+    /**
+     * 获取今日复习科目列表（首页用）
+     * @param currentUserId 当前用户ID
+     * @return 今日复习列表
+     */
+    SubjectVO getTodayReviewList(Long currentUserId);
 }

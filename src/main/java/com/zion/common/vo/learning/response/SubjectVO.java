@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 
 @Data
 public class SubjectVO implements Serializable {
+
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
     

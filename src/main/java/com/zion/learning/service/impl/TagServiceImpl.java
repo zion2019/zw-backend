@@ -1,6 +1,7 @@
 package com.zion.learning.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.text.CharSequenceUtil;
 import com.zion.common.basic.Page;
 import com.zion.common.db.ZCondition;
 import com.zion.common.utils.BaseEntityUtil;
@@ -54,10 +55,8 @@ public class TagServiceImpl implements TagService {
         Page<TagVO> pageRes = new Page<>();
         Page<Tag> pages = tagDao.queryPage(
                 new Page<>(qo.getPageNo(), qo.getPageSize()), 
-                new ZCondition<Tag>()
-                        .eq(qo.getUserId() != null, Tag::getUserId, qo.getUserId())
-                        .eq(qo.getParentId() != null, Tag::getParentId, qo.getParentId())
-                        .like(qo.getName() != null, Tag::getName, qo.getName()));
+                new ZCondition<Tag>().eq(qo.getUserId() != null, Tag::getUserId, qo.getUserId())
+                        .like(CharSequenceUtil.isNotBlank(qo.getName()), Tag::getName, qo.getName()));
         if(pages == null || CollUtil.isEmpty(pages.getDataList())){
             return pageRes;
         }
@@ -71,36 +70,16 @@ public class TagServiceImpl implements TagService {
     @Override
     public List<TagVO> list(TagQO qo) {
         List<Tag> tags = tagDao.queryList(
-                new ZCondition<Tag>()
-                        .eq(qo.getUserId() != null, Tag::getUserId, qo.getUserId())
-                        .eq(qo.getParentId() != null, Tag::getParentId, qo.getParentId())
-                        .like(qo.getName() != null, Tag::getName, qo.getName()));
+                new ZCondition<Tag>().eq(qo.getUserId() != null, Tag::getUserId, qo.getUserId())
+                        .like(CharSequenceUtil.isNotBlank(qo.getName()), Tag::getName, qo.getName()));
         return TagMapper.INSTANCE.toVOs(tags);
     }
     
     @Override
     public List<TagVO> tree(Long userId) {
         List<Tag> tags = tagDao.queryList(
-                new ZCondition<Tag>()
-                        .eq(Tag::getUserId, userId));
+                new ZCondition<Tag>().eq(Tag::getUserId, userId));
         return TagMapper.INSTANCE.toVOs(tags);
     }
-    
-    /**
-     * 构建查询条件
-     *
-     * @param qo 查询参数
-     * @return 查询条件
-     */
-    private Tag buildConditionFromQO(TagQO qo) {
-        Tag condition = Tag.builder().build();
-        condition.setId(qo.getId());
-        condition.setName(qo.getName());
-        condition.setColor(qo.getColor());
-        condition.setIcon(qo.getIcon());
-        condition.setParentId(qo.getParentId());
-        condition.setSortOrder(qo.getSortOrder());
-        condition.setUserId(qo.getUserId());
-        return condition;
-    }
+
 }

@@ -8,8 +8,6 @@ public class TagQO extends Page {
     private Long id;
     private String name;
     private String color;
-    private String icon;
-    private Long parentId;
-    private Integer sortOrder;
+    private String description;
     private Long userId;
 }

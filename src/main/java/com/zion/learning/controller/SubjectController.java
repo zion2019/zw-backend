@@ -14,6 +14,11 @@ public class SubjectController extends BaseController {
     
     @Resource
     private SubjectService subjectService;
+
+    @GetMapping
+    public R<SubjectVO> todayReview() {
+        return R.ok(subjectService.getTodayReviewList(getCurrentUserId()));
+    }
     
     @PostMapping
     public R<Boolean> save(@RequestBody SubjectQO qo) {
