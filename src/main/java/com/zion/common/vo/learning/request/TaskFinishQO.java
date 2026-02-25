@@ -1,6 +1,5 @@
 package com.zion.common.vo.learning.request;
 
-import com.zion.learning.common.TaskStatus;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -14,5 +13,4 @@ public class TaskFinishQO implements Serializable {
 
     private String finishRemark;
 
-    private TaskStatus taskStatus;
 }

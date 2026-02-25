@@ -37,7 +37,7 @@ public class KnowledgePointController extends BaseController {
     }
     
     @GetMapping
-    public R list(KnowledgePoint condition) {
-        return R.ok(knowledgePointService.list(condition));
+    public R list(KnowledgePointQO qo) {
+        return R.ok(knowledgePointService.list(qo));
     }
 }

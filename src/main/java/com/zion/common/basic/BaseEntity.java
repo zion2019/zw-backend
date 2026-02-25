@@ -10,9 +10,8 @@ import java.time.LocalDateTime;
 /**
  * Database basic info
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
-public class BaseEntity extends BasicCondition implements Serializable {
+public class BaseEntity implements Serializable {
 
     @Id
     public Long id;

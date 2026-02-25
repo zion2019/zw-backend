@@ -1,7 +1,6 @@
 package com.zion.common.vo.learning.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.zion.learning.common.DegreeOfMastery;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -19,7 +18,6 @@ public class PractiseVO implements Serializable {
 
     public String background;
 
-    private DegreeOfMastery degreeOfMastery;
 
     public BigDecimal toDayDoneCount;
 

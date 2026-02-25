@@ -18,6 +18,5 @@ public interface ZDao<M extends BaseEntity> {
     long delete(ZCondition<M> condition);
     List<M> queryList(ZCondition<M> condition);
     Page<M> queryPage(Page<M> page, ZCondition<M> condition);
-
     long deleteById(Long id);
 }

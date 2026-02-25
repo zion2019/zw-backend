@@ -1,7 +1,6 @@
 package com.zion.common.vo.learning.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.zion.learning.common.DegreeOfMastery;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -15,9 +14,7 @@ public class PointVo implements Serializable
     private Long id;
 
     private String title;
-
-    private DegreeOfMastery degreeOfMastery;
-
+    
     private Integer subPointCount;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
