@@ -5,7 +5,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 
 @Data
 public class R<T extends Serializable> implements Serializable{
@@ -63,16 +62,6 @@ public class R<T extends Serializable> implements Serializable{
         return R.ok(data, OK_MSG);
     }
 
-    public static <T extends Serializable> R<T> ok(Page<T> pageData) {
-        R<T> r = R.ok();
-        r.setDataList(pageData.getDataList());
-        r.setPageNo(pageData.getPageNo());
-        r.setPageSize(pageData.getPageSize());
-        r.setTotal(pageData.getTotal());
-        return r;
-    }
-
-
     public static <T extends Serializable> R<T> ok(T data, String message) {
         return R.ok(data, null, null, message);
     }
@@ -109,12 +98,6 @@ public class R<T extends Serializable> implements Serializable{
         return R;
     }
 
-    /**
-     * 无权访问
-     */
-    public static <T extends Serializable> R<T> noAuth() {
-        return R.error(NO_AUTH_401, NO_AUTH_MSG);
-    }
 
     private static <T extends Serializable> R<T> ok(T data, List<T> dataList,
                                                     Serializable extend, String message) {

@@ -61,7 +61,7 @@ public abstract class ZDaoMongoImpl <M extends BaseEntity> implements ZDao<M>{
 
     @Override
     public long update(ZCondition<M> condition) {
-        Update update = new Update().set("updateTime", LocalDateTimeUtil.now())
+        Update update = new Update().set("updatedTime", LocalDateTimeUtil.now())
                 .set("updatedUser", SpringSecurityUtil.getCurrentUsername());
         UpdateResult result = mongoTemplate.updateMulti(buildQueryWithCondition(condition), update, entityClass);
         return result.getModifiedCount();
@@ -70,7 +70,7 @@ public abstract class ZDaoMongoImpl <M extends BaseEntity> implements ZDao<M>{
     @Override
     public long deleteById(Long id){
         Update update = new Update().set("deleted", CommonConstant.DELETED_YES)
-                .set("updateTime", LocalDateTimeUtil.now())
+                .set("updatedTime", LocalDateTimeUtil.now())
                 .set("updatedUser", SpringSecurityUtil.getCurrentUsername());
         return mongoTemplate.updateFirst(new Query(Criteria.where("_id").is(id)), update, entityClass).getModifiedCount();
     }
@@ -78,7 +78,7 @@ public abstract class ZDaoMongoImpl <M extends BaseEntity> implements ZDao<M>{
     @Override
     public long delete(ZCondition<M> condition) {
         Update update = new Update().set("deleted", CommonConstant.DELETED_YES)
-                .set("updateTime", LocalDateTimeUtil.now())
+                .set("updatedTime", LocalDateTimeUtil.now())
                 .set("updatedUser", SpringSecurityUtil.getCurrentUsername());
         UpdateResult result = mongoTemplate.updateMulti(buildQueryWithCondition(condition), update, entityClass);
         return result.getModifiedCount();
@@ -86,6 +86,7 @@ public abstract class ZDaoMongoImpl <M extends BaseEntity> implements ZDao<M>{
 
     private Query buildQueryWithCondition(ZCondition<M> condition) {
         Query query = new Query();
+        query.addCriteria(Criteria.where("deleted").is(CommonConstant.DELETED_NO));
         // eq
         if(condition.getEq() != null && !condition.getEq().isEmpty()){
             for (Map.Entry<String, Object> entry : condition.getEq().entrySet()) {
@@ -159,7 +160,7 @@ public abstract class ZDaoMongoImpl <M extends BaseEntity> implements ZDao<M>{
         }
 
         // Create a Pageable object for pagination
-        Pageable pageable = null;
+        Pageable pageable;
         if (page.getPageSize() == -1) {
             // 全量查询时不使用分页
             pageable = PageRequest.of(0, Integer.MAX_VALUE); // 使用一个极大值模拟全量查询

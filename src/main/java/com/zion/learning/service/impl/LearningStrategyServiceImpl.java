@@ -105,7 +105,7 @@ public class LearningStrategyServiceImpl implements LearningStrategyService {
         if (CollUtil.isNotEmpty(dataList)) {
             List<Long> strategyIds = dataList.stream()
                     .map(LearningStrategyVO::getId)
-                    .toList();
+                    .collect(Collectors.toList());
             
             // 批量获取所有策略的间隔设置
             List<LearningStrategyInterval> allIntervals = learningStrategyIntervalDao.queryList(
@@ -206,22 +206,5 @@ public class LearningStrategyServiceImpl implements LearningStrategyService {
         result.setMasteryLevel(nextInterval.getRequiredMasteryLevel());
         result.setNextReviewTime(LocalDateTime.now().plusHours(nextInterval.getIntervalHours()));
         return result;
-    }
-    
-    /**
-     * 构建查询条件
-     *
-     * @param qo 查询参数
-     * @return 查询条件
-     */
-    private LearningStrategy buildConditionFromQO(LearningStrategyQO qo) {
-        LearningStrategy condition = LearningStrategy.builder().build();
-        condition.setId(qo.getId());
-        condition.setName(qo.getName());
-        condition.setDescription(qo.getDescription());
-        condition.setAllowFallback(qo.getAllowFallback());
-        condition.setIsSystemDefault(qo.getIsSystemDefault());
-        condition.setUserId(qo.getUserId());
-        return condition;
     }
 }

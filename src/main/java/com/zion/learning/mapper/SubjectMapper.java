@@ -1,5 +1,6 @@
 package com.zion.learning.mapper;
 
+import com.zion.common.vo.learning.request.SubjectQO;
 import com.zion.learning.model.Subject;
 import com.zion.common.vo.learning.response.SubjectVO;
 import org.mapstruct.Mapper;
@@ -14,7 +15,7 @@ public interface SubjectMapper {
     
     SubjectVO toVO(Subject subject);
     
-    Subject toEntity(SubjectVO subjectVO);
+    Subject toEntity(SubjectQO qo);
     
     List<SubjectVO> toVOs(List<Subject> subjects);
 }

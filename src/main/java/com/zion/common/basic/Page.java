@@ -1,5 +1,6 @@
 package com.zion.common.basic;
 
+import cn.hutool.core.collection.ListUtil;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -11,9 +12,9 @@ public class Page<T> implements Serializable {
     private Integer pageNo = 1;
     private Integer pageSize = 10;
 
-    private Long total;
+    private Long total = 0L;
 
-    private List<T> dataList;
+    private List<T> dataList = ListUtil.empty();
 
     public Page(Integer pageNo,Integer pageSize) {
         this.pageSize = pageSize;

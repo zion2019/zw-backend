@@ -34,7 +34,7 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean save(SubjectQO qo) {
-        Subject subject = buildConditionFromQO(qo);
+        Subject subject = SubjectMapper.INSTANCE.toEntity(qo);
         subjectDao.save(subject);
         return true;
     }
@@ -118,20 +118,5 @@ public class SubjectServiceImpl implements SubjectService {
         
         subjectDao.save(subject);
         return true;
-    }
-
-    /**
-     * 构建查询条件
-     *
-     * @param qo 查询参数
-     * @return 查询条件
-     */
-    private Subject buildConditionFromQO(SubjectQO qo) {
-        Subject condition = Subject.builder().build();
-        condition.setId(qo.getId());
-        condition.setTitle(qo.getTitle());
-        condition.setTagId(qo.getTagId());
-        condition.setUserId(qo.getUserId());
-        return condition;
     }
 }

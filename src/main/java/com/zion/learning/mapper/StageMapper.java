@@ -1,5 +1,6 @@
 package com.zion.learning.mapper;
 
+import com.zion.common.vo.learning.request.StageQO;
 import com.zion.learning.model.Stage;
 import com.zion.common.vo.learning.response.StageVO;
 import org.mapstruct.Mapper;
@@ -14,7 +15,7 @@ public interface StageMapper {
     
     StageVO toVO(Stage stage);
     
-    Stage toEntity(StageVO stageVO);
-    
+    Stage toEntity(StageQO qo);
+
     List<StageVO> toVOs(List<Stage> stages);
 }

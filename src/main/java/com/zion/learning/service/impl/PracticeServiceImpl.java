@@ -28,23 +28,13 @@ public class PracticeServiceImpl implements PracticeService {
     
     @Resource
     private KnowledgePointService knowledgePointService;
-    
-    @Resource
-    private EbbinghausService ebbinghausService;
 
 
     
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean practice(PracticeRecordQO qo) {
-        PracticeRecord practiceRecord = PracticeRecord.builder()
-                .userId(qo.getUserId())
-                .subjectId(qo.getSubjectId())
-                .knowledgePointId(qo.getKnowledgePointId())
-                .result(qo.getResult())
-                .practiceStartTime(qo.getPracticeStartTime())
-                .practiceEndTime(qo.getPracticeEndTime())
-                .build();
+        PracticeRecord practiceRecord = PracticeRecordMapper.INSTANCE.toEntity(qo);
         practiceRecord.setId(qo.getId());
 
         // 知识点练习触发

@@ -3,12 +3,12 @@ package com.zion.learning.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.zion.common.basic.BaseEntity;
 import com.zion.learning.common.constents.MasteryLevel;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
 @Document(collection = "learning_intervals")
 public class LearningStrategyInterval extends BaseEntity {
     @JsonFormat(shape = JsonFormat.Shape.STRING)

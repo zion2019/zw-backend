@@ -1,10 +1,10 @@
 package com.zion.learning.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.zion.common.basic.Page;
 import com.zion.common.db.ZCondition;
-import com.zion.common.utils.BaseEntityUtil;
 import com.zion.common.vo.learning.request.TagQO;
 import com.zion.common.vo.learning.response.TagVO;
 import com.zion.learning.mapper.TagMapper;
@@ -28,18 +28,24 @@ public class TagServiceImpl implements TagService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean save(TagQO qo) {
-        Tag entity = TagMapper.INSTANCE.toEntity(qo);
-        BaseEntityUtil.filedBasicInfo(entity);
-        tagDao.save(entity);
+        Tag saveTag;
+        if(qo.getId() != null){
+            saveTag = tagDao.getById(qo.getId());
+            Assert.isTrue(saveTag!=null, "tag is not exist");
+            saveTag.setName(qo.getName());
+            saveTag.setDescription(qo.getDescription());
+            saveTag.setColor(qo.getColor());
+        }else{
+            saveTag = TagMapper.INSTANCE.toEntity(qo);
+        }
+        tagDao.save(saveTag);
         return true;
     }
     
     @Override
     public TagVO info(Long id, Long userId) {
         Tag tag = tagDao.getById(id);
-        if(tag == null){
-            return null;
-        }
+        Assert.isTrue(tag!=null, "tag is not exist");
         return TagMapper.INSTANCE.toVO(tag);
     }
     

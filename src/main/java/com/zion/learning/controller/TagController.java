@@ -1,6 +1,7 @@
 package com.zion.learning.controller;
 
 import com.zion.common.basic.BaseController;
+import com.zion.common.basic.Page;
 import com.zion.common.basic.R;
 import com.zion.common.vo.learning.request.TagQO;
 import com.zion.common.vo.learning.response.TagVO;
@@ -32,18 +33,18 @@ public class TagController extends BaseController {
     }
     
     @GetMapping("/tree")
-    public R tree() {
+    public R<TagVO> tree() {
         return R.ok(tagService.tree(getCurrentUserId()));
     }
     
     @GetMapping("/page")
-    public R page(TagQO qo) {
+    public R<Page<TagVO>> page(TagQO qo) {
         qo.setUserId(getCurrentUserId());
         return R.ok(tagService.page(qo));
     }
     
     @GetMapping
-    public R list(TagQO qo) {
+    public R<TagVO> list(TagQO qo) {
         qo.setUserId(getCurrentUserId());
         return R.ok(tagService.list(qo));
     }

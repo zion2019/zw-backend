@@ -13,13 +13,8 @@ public class TagVO implements Serializable {
     private String name;
     
     private String color;
-    
-    private String icon;
-    
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Long parentId;
-    
-    private Integer sortOrder;
+
+    private String description;
     
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long userId;

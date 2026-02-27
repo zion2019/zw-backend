@@ -1,6 +1,7 @@
 package com.zion.learning.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
@@ -26,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -44,7 +46,7 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean save(KnowledgePointQO qo) {
-        KnowledgePoint knowledgePoint = buildConditionFromQO(qo);
+        KnowledgePoint knowledgePoint = KnowledgePointMapper.INSTANCE.toEntity(qo);
 
         // 计算下次复习
         LearnStrategyNextVO nextVo = learningStrategyService.calculateNext(knowledgePoint.getStrategyId()
@@ -142,8 +144,6 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
 
     @Override
     public void updateBreakDownCnt(Long knowledgePointId, Integer breakDownCnt) {
-        KnowledgePoint condition = KnowledgePoint.builder().build();
-        condition.setId(knowledgePointId);
         KnowledgePoint knowledgePoint = dao.getById(knowledgePointId);
         if (knowledgePoint == null){
             log.error("The knowledge point:{} is not found", knowledgePointId);
@@ -166,7 +166,7 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
                 .select(KnowledgePoint::getSubjectId,KnowledgePoint::getNextReviewTime)
                 .order(KnowledgePoint::getNextReviewTime, ZOrder.ASC));
         if(pageResult == null || pageResult.getDataList() == null){
-            return List.of();
+            return ListUtil.empty();
         }
 
         // find early knowledge point for count
@@ -174,8 +174,7 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
                 .sorted(Comparator.comparing(KnowledgePoint::getNextReviewTime))
                 .map(KnowledgePoint::getSubjectId)
                 .distinct()
-                .limit(count)
-                .toList();
+                .limit(count).collect(Collectors.toList());
 
         List<KnowledgePointVO> earlyKnowledgePointVOS = new ArrayList<>(count);
         for (Long earlySubjectId : earlySubjectIds) {
@@ -200,30 +199,8 @@ public class KnowledgePointServiceImpl implements KnowledgePointService {
     private void refreshStageKnowledgePointCnt(Long stageId) {
         StageQO refreshStageQO = new StageQO();
         refreshStageQO.setId(stageId);
-        refreshStageQO.setKnowledgePointCount(dao
-                .count(new ZCondition<KnowledgePoint>()
+        refreshStageQO.setKnowledgePointCount(dao.count(new ZCondition<KnowledgePoint>()
                 .eq(KnowledgePoint::getStageId, stageId)));
         stageService.refreshStats(refreshStageQO);
     }
-
-    
-    /**
-     * 构建查询条件
-     *
-     * @param qo 查询参数
-     * @return 查询条件
-     */
-    private KnowledgePoint buildConditionFromQO(KnowledgePointQO qo) {
-        KnowledgePoint condition = KnowledgePoint.builder().build();
-        condition.setId(qo.getId());
-        condition.setTitle(qo.getTitle());
-        condition.setStageId(qo.getStageId());
-        condition.setSubjectId(qo.getSubjectId());
-        condition.setUserId(qo.getUserId());
-        condition.setBreakdownCount(qo.getBreakdownCount());
-        condition.setNextReviewTime(qo.getNextReviewTime());
-        return condition;
-    }
-
-
 }

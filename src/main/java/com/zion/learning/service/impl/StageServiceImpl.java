@@ -4,7 +4,6 @@ import cn.hutool.core.collection.CollUtil;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
 import com.zion.common.db.ZCondition;
-import com.zion.common.utils.BaseEntityUtil;
 import com.zion.common.vo.learning.request.SubjectQO;
 import com.zion.learning.service.StageService;
 import com.zion.learning.model.Stage;
@@ -29,12 +28,12 @@ public class StageServiceImpl implements StageService {
     
     @Resource
     private SubjectService subjectService;
+
     
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean save(StageQO qo) {
-        Stage stage = buildConditionFromQO(qo);
-        BaseEntityUtil.filedBasicInfo(stage);
+        Stage stage = StageMapper.INSTANCE.toEntity(qo);
         stageDao.save(stage);
         
         // 更新科目中的阶段计数
@@ -132,19 +131,4 @@ public class StageServiceImpl implements StageService {
         return true;
     }
 
-    /**
-     * 构建查询条件
-     *
-     * @param qo 查询参数
-     * @return 查询条件
-     */
-    private Stage buildConditionFromQO(StageQO qo) {
-        Stage condition = Stage.builder().build();
-        condition.setId(qo.getId());
-        condition.setTitle(qo.getTitle());
-        condition.setSubjectId(qo.getSubjectId());
-        condition.setOrderNum(qo.getOrderNum());
-        condition.setKnowledgePointCount(qo.getKnowledgePointCount());
-        return condition;
-    }
 }

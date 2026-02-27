@@ -1,5 +1,6 @@
 package com.zion.learning.mapper;
 
+import com.zion.common.vo.learning.request.PracticeRecordQO;
 import com.zion.learning.model.PracticeRecord;
 import com.zion.common.vo.learning.response.PracticeRecordVO;
 import org.mapstruct.Mapper;
@@ -14,7 +15,7 @@ public interface PracticeRecordMapper {
     
     PracticeRecordVO toVO(PracticeRecord practiceRecord);
     
-    PracticeRecord toEntity(PracticeRecordVO practiceRecordVO);
+    PracticeRecord toEntity(PracticeRecordQO qo);
     
     List<PracticeRecordVO> toVOs(List<PracticeRecord> practiceRecords);
 }

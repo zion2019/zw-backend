@@ -2,7 +2,6 @@ package com.zion.learning.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.zion.common.basic.BaseEntity;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -10,7 +9,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 @Data
-@Builder
 @EqualsAndHashCode(callSuper = true)
 @Document(collection = "knowledge_points")
 public class KnowledgePoint extends BaseEntity {

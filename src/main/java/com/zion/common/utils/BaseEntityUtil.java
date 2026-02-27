@@ -20,8 +20,8 @@ public class BaseEntityUtil {
             baseEntity.setCreatedTime(now);
             baseEntity.setCreatedUser(currentUsername);
         }else{
-            baseEntity.setUpdatedUser(currentUsername);
             baseEntity.setUpdatedTime(now);
+            baseEntity.setUpdatedUser(currentUsername);
         }
 
         if(baseEntity.getVersion() == null){

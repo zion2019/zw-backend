@@ -2,14 +2,14 @@ package com.zion.learning.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.zion.common.basic.BaseEntity;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
 
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
 @Document(collection = "stages")
 public class Stage extends BaseEntity {
     private String title;           // 阶段名称

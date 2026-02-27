@@ -1,14 +1,14 @@
 package com.zion.learning.model;
 
 import com.zion.common.basic.BaseEntity;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
 @Document(collection = "statistics_records")
 public class StatisticsRecord extends BaseEntity {
     private Long userId;

@@ -2,12 +2,12 @@ package com.zion.learning.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.zion.common.basic.BaseEntity;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Builder
+@EqualsAndHashCode(callSuper = true)
 @Document(collection = "learning_strategies")
 public class LearningStrategy extends BaseEntity {
     private String name;            // 策略名称
