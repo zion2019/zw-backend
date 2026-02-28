@@ -3,6 +3,7 @@ package com.zion.learning.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.text.CharSequenceUtil;
+import com.zion.common.basic.BaseEntity;
 import com.zion.common.basic.Page;
 import com.zion.common.db.ZCondition;
 import com.zion.common.vo.learning.request.TagQO;
@@ -77,7 +78,8 @@ public class TagServiceImpl implements TagService {
     public List<TagVO> list(TagQO qo) {
         List<Tag> tags = tagDao.queryList(
                 new ZCondition<Tag>().eq(qo.getUserId() != null, Tag::getUserId, qo.getUserId())
-                        .like(CharSequenceUtil.isNotBlank(qo.getName()), Tag::getName, qo.getName()));
+                        .like(CharSequenceUtil.isNotBlank(qo.getName()), Tag::getName, qo.getName())
+                        .in(CollUtil.isNotEmpty(qo.getQueryIds()),BaseEntity::getId, qo.getQueryIds()));
         return TagMapper.INSTANCE.toVOs(tags);
     }
     

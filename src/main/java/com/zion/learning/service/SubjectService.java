@@ -3,6 +3,7 @@ package com.zion.learning.service;
 import com.zion.common.basic.Page;
 import com.zion.common.vo.learning.request.SubjectQO;
 import com.zion.common.vo.learning.response.SubjectVO;
+import com.zion.common.vo.learning.response.TagVO;
 
 import java.util.List;
 
@@ -57,4 +58,12 @@ public interface SubjectService {
      * @return 今日复习列表
      */
     SubjectVO getTodayReviewList(Long currentUserId);
+
+    /**
+     * 获取最近使用标签列表（首页用）
+     * @param showNum 显示数量
+     * @param currentUserId 当前用户ID
+     * @return 最近使用标签列表
+     */
+    List<TagVO> recentlyTags(int showNum, Long currentUserId);
 }

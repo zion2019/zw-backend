@@ -35,11 +35,20 @@ public class ZCondition<M extends BaseEntity> {
         }
         return this;
     }
+    public <R> ZCondition<M> in(boolean isIn,ZFunction<M, R> column, R val){
+        if(isIn){
+            return in(column, val);
+        }
+        return this;
+    }
+
     public <R> ZCondition<M> eq(ZFunction<M, R> column, R val) {
         String field = ZLambdaUtils.getField(column);
         eq.put(field, val);
         return this;
     }
+
+
     public <R> ZCondition<M> in(ZFunction<M, R> column, R val) {
         String field = ZLambdaUtils.getField(column);
         in.put(field, val);

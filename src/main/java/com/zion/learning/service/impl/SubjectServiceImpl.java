@@ -5,9 +5,12 @@ import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
 import com.zion.common.db.ZCondition;
 import com.zion.common.vo.learning.request.SubjectQO;
+import com.zion.common.vo.learning.request.TagQO;
 import com.zion.common.vo.learning.response.SubjectVO;
+import com.zion.common.vo.learning.response.TagVO;
 import com.zion.learning.mapper.SubjectMapper;
 import com.zion.learning.service.SubjectService;
+import com.zion.learning.service.TagService;
 import com.zion.learning.model.Subject;
 import com.zion.learning.dao.SubjectDao;
 import jakarta.annotation.Resource;
@@ -15,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,13 +28,45 @@ public class SubjectServiceImpl implements SubjectService {
     
     @Resource
     private SubjectDao subjectDao;
+    
+    @Resource
+    private TagService tagService;
 
     @Override
     public SubjectVO getTodayReviewList(Long currentUserId) {
         // todo 今日待复习科目列表
         return null;
     }
-    
+
+    @Override
+    public List<TagVO> recentlyTags(int showNum, Long currentUserId) {
+        List<TagVO> vos = new ArrayList<>();
+
+        // 获取最近使用频率最高的tagId列表
+        List<Long> highFrequencyTagIds = subjectDao.getRecentlyTagIds(showNum, currentUserId);
+        // by id 查询tag
+        if(CollUtil.isNotEmpty(highFrequencyTagIds)){
+            TagQO tagQO = new TagQO();
+            tagQO.setQueryIds(highFrequencyTagIds);
+            vos.addAll(tagService.list(tagQO));
+        }
+
+        // 不足数则随机查补齐
+        int extraTagNum = showNum - highFrequencyTagIds.size();
+        if (extraTagNum <= 0) {
+            return vos;
+        }
+        TagQO pageTagQo = new TagQO();
+        pageTagQo.setPageNo(1);
+        pageTagQo.setPageSize(extraTagNum);
+        Page<TagVO> page = tagService.page(pageTagQo);
+        if(page != null && CollUtil.isNotEmpty(page.getDataList())){
+            vos.addAll(page.getDataList());
+        }
+
+        return vos;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean save(SubjectQO qo) {

@@ -4,6 +4,7 @@ import com.zion.common.basic.BaseController;
 import com.zion.common.basic.R;
 import com.zion.common.vo.learning.request.SubjectQO;
 import com.zion.common.vo.learning.response.SubjectVO;
+import com.zion.common.vo.learning.response.TagVO;
 import com.zion.learning.service.SubjectService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -40,5 +41,10 @@ public class SubjectController extends BaseController {
     public R page(SubjectQO qo) {
         qo.setUserId(getCurrentUserId());
         return R.ok(subjectService.page(qo));
+    }
+
+    @GetMapping("/tag/recently")
+    public R<TagVO> recentlyTags(int showNum) {
+        return R.ok(subjectService.recentlyTags(showNum, getCurrentUserId()));
     }
 }
