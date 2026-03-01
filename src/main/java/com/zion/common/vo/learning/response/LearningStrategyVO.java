@@ -19,7 +19,7 @@ public class LearningStrategyVO implements Serializable {
     
     private Boolean allowFallback;
     
-    private Boolean isSystemDefault;
+    private Boolean isDefault;
     
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long userId;

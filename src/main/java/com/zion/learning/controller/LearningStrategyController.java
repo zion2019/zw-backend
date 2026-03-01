@@ -30,6 +30,11 @@ public class LearningStrategyController extends BaseController {
     public R<Boolean> delete(@PathVariable("id") Long id) {
         return R.ok(learningStrategyService.delete(id));
     }
+    
+    @PostMapping("/default/{id}")
+    public R<Boolean> setDefault(@PathVariable("id") Long id) {
+        return R.ok(learningStrategyService.setDefaultStrategy(id, getCurrentUserId()));
+    }
 
     
     @GetMapping("/page")

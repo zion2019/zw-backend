@@ -60,9 +60,10 @@ public abstract class ZDaoMongoImpl <M extends BaseEntity> implements ZDao<M>{
     }
 
     @Override
-    public long update(ZCondition<M> condition) {
+    public long update(ZUpdateCondition<M> condition) {
         Update update = new Update().set("updatedTime", LocalDateTimeUtil.now())
                 .set("updatedUser", SpringSecurityUtil.getCurrentUsername());
+        condition.getSet().forEach(update::set);
         UpdateResult result = mongoTemplate.updateMulti(buildQueryWithCondition(condition), update, entityClass);
         return result.getModifiedCount();
     }

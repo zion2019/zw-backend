@@ -14,7 +14,7 @@ public interface ZDao<M extends BaseEntity> {
     long count(ZCondition<M> condition);
     M queryOne(ZCondition<M> condition);
     M save(M entity);
-    long update(ZCondition<M> condition);
+    long update(ZUpdateCondition<M> condition);
     long delete(ZCondition<M> condition);
     List<M> queryList(ZCondition<M> condition);
     Page<M> queryPage(Page<M> page, ZCondition<M> condition);

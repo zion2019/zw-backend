@@ -53,4 +53,12 @@ public interface LearningStrategyService {
      * @return 下次复习信息
      */
     LearnStrategyNextVO calculateNext(Long strategyId, Long currStrategyIntervalId);
+    
+    /**
+     * 设置默认策略
+     * @param strategyId 策略ID
+     * @param userId 用户ID
+     * @return 是否成功
+     */
+    boolean setDefaultStrategy(Long strategyId, Long userId);
 }

@@ -12,9 +12,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class LearningStrategy extends BaseEntity {
     private String name;            // 策略名称
     private String description;     // 描述
+    private Boolean isDefault;      // 是否为默认策略
     private Boolean allowFallback;  // 是否允许回退
-    private Boolean isSystemDefault; // 是否系统预设
-    
+
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long userId;            // 用户ID（null为系统策略）
 }

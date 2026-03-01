@@ -2,10 +2,12 @@ package com.zion.learning.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
+import com.zion.common.basic.BaseEntity;
 import com.zion.common.basic.Page;
 import com.zion.common.basic.ServiceException;
 import com.zion.common.db.ZCondition;
 import com.zion.common.db.ZOrder;
+import com.zion.common.db.ZUpdateCondition;
 import com.zion.common.vo.learning.request.LearningStrategyIntervalQO;
 import com.zion.common.vo.learning.request.LearningStrategyQO;
 import com.zion.common.vo.learning.response.LearnStrategyNextVO;
@@ -43,6 +45,11 @@ public class LearningStrategyServiceImpl implements LearningStrategyService {
     public boolean save(LearningStrategyQO qo) {
         LearningStrategy entity = LearningStrategyMapper.INSTANCE.toEntity(qo);
         learningStrategyDao.save(entity);
+
+        // 处理默认策略逻辑
+        if (Boolean.TRUE.equals(qo.getIsDefault())) {
+            this.setDefaultStrategy(entity.getId(), qo.getUserId());
+        }
 
         // save intervals
         this.saveIntervals(entity.getId(), qo.getIntervals());
@@ -89,7 +96,6 @@ public class LearningStrategyServiceImpl implements LearningStrategyService {
                 new Page<>(qo.getPageNo(), qo.getPageSize()), 
                 new ZCondition<LearningStrategy>()
                         .eq(qo.getUserId() != null, LearningStrategy::getUserId, qo.getUserId())
-                        .eq(qo.getIsSystemDefault() != null, LearningStrategy::getIsSystemDefault, qo.getIsSystemDefault())
                         .like(qo.getName() != null, LearningStrategy::getName, qo.getName()));
         
         if(pages == null || CollUtil.isEmpty(pages.getDataList())){
@@ -99,35 +105,7 @@ public class LearningStrategyServiceImpl implements LearningStrategyService {
         pageRes.setPageSize(pages.getPageSize());
         pageRes.setTotal(pages.getTotal());
         pageRes.setDataList(LearningStrategyMapper.INSTANCE.toVOs(pages.getDataList()));
-        
-        // 批量查询并填充intervals
-        List<LearningStrategyVO> dataList = pageRes.getDataList();
-        if (CollUtil.isNotEmpty(dataList)) {
-            List<Long> strategyIds = dataList.stream()
-                    .map(LearningStrategyVO::getId)
-                    .collect(Collectors.toList());
-            
-            // 批量获取所有策略的间隔设置
-            List<LearningStrategyInterval> allIntervals = learningStrategyIntervalDao.queryList(
-                    new ZCondition<LearningStrategyInterval>()
-                            .in(LearningStrategyInterval::getStrategyId, strategyIds)
-                            .order(LearningStrategyInterval::getSequence, ZOrder.ASC));
-            
-            // 按策略ID分组
-            Map<Long, List<LearningStrategyInterval>> intervalsGroupedByStrategy = new HashMap<>();
-            if (CollUtil.isNotEmpty(allIntervals)) {
-                intervalsGroupedByStrategy = allIntervals.stream()
-                        .collect(Collectors.groupingBy(LearningStrategyInterval::getStrategyId));
-            }
-            
-            // 填充每个策略的间隔设置
-            for (LearningStrategyVO strategy : dataList) {
-                List<LearningStrategyInterval> intervals = intervalsGroupedByStrategy.get(strategy.getId());
-                if (CollUtil.isNotEmpty(intervals)) {
-                    strategy.setIntervals(LearningStrategyIntervalMapper.INSTANCE.toVOs(intervals));
-                }
-            }
-        }
+
         
         return pageRes;
     }
@@ -137,7 +115,6 @@ public class LearningStrategyServiceImpl implements LearningStrategyService {
         List<LearningStrategy> strategies = learningStrategyDao.queryList(
                 new ZCondition<LearningStrategy>()
                         .eq(qo.getUserId() != null, LearningStrategy::getUserId, qo.getUserId())
-                        .eq(qo.getIsSystemDefault() != null, LearningStrategy::getIsSystemDefault, qo.getIsSystemDefault())
                         .like(qo.getName() != null, LearningStrategy::getName, qo.getName()));
         return LearningStrategyMapper.INSTANCE.toVOs(strategies);
     }
@@ -147,7 +124,9 @@ public class LearningStrategyServiceImpl implements LearningStrategyService {
                 new ZCondition<LearningStrategyInterval>()
                         .eq(LearningStrategyInterval::getStrategyId, strategyId)
                         .order(LearningStrategyInterval::getSequence, ZOrder.ASC));
-        Assert.isTrue(CollUtil.isNotEmpty(intervals), "The strategy id " + strategyId + " 's intervals not found");
+        if(CollUtil.isEmpty(intervals)){
+            return Collections.emptyList();
+        }
         return LearningStrategyIntervalMapper.INSTANCE.toVOs(intervals);
     }
 
@@ -206,5 +185,22 @@ public class LearningStrategyServiceImpl implements LearningStrategyService {
         result.setMasteryLevel(nextInterval.getRequiredMasteryLevel());
         result.setNextReviewTime(LocalDateTime.now().plusHours(nextInterval.getIntervalHours()));
         return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean setDefaultStrategy(Long strategyId, Long userId) {
+        // 将该用户的所有策略设置为非默认
+        ZUpdateCondition<LearningStrategy> unDefault = new ZUpdateCondition<>();
+        unDefault.eq(LearningStrategy::getUserId,userId);
+        unDefault.set(LearningStrategy::getIsDefault,false);
+        learningStrategyDao.update(unDefault);
+        
+        // 将指定策略设置为默认
+        ZUpdateCondition<LearningStrategy> setDefault = new ZUpdateCondition<>();
+        setDefault.set(LearningStrategy::getIsDefault,true);
+        setDefault.eq(BaseEntity::getId,strategyId);
+        learningStrategyDao.update(setDefault);
+        return true;
     }
 }

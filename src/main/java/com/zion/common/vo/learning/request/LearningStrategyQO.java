@@ -12,6 +12,6 @@ public class LearningStrategyQO extends Page {
     private String description;
     private List<LearningStrategyIntervalQO> intervals;
     private Boolean allowFallback;
-    private Boolean isSystemDefault;
+    private Boolean isDefault;
     private Long userId;
 }
